@@ -1,0 +1,5 @@
+- [ ] Check if strings are invalid to send 404 early.
+- [ ] Global BTTV/FFZ emotes.
+- [ ] Cron job to re-fetch top BTTV emotes.
+- [ ] `goto=channel` query parameter.
+- [ ] `index=n` query parameter to index multiple matches.
