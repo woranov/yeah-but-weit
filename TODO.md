@@ -3,3 +3,4 @@
 - [ ] Cron job to re-fetch top BTTV emotes.
 - [ ] `goto=channel` query parameter.
 - [ ] `index=n` query parameter to index multiple matches.
+- [ ] `goto=tester` query parameter redirecting to https://emotetester.gempir.com/.
