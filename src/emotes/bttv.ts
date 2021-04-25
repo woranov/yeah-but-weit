@@ -76,10 +76,14 @@ async function list(channel: Channel): Promise<Emote[] | null> {
 }
 
 
-async function listTop(count: number = 4_500): Promise<Emote[]> {
+async function listTop({ count = 4_500, force = false }: {
+  count?: number, force?: boolean
+}): Promise<Emote[]> {
   const key = "list:bttv:top";
   const perPage = 100;
-  let emoteData: BttvTrendingEmoteListEntry[] | null = <BttvTrendingEmoteListEntry[] | null>await EMOTES.get(key, "json");
+  let emoteData = force
+    ? null
+    : <BttvTrendingEmoteListEntry[] | null>await EMOTES.get(key, "json");
 
   if (!emoteData) {
     emoteData = [];
@@ -177,7 +181,7 @@ async function find(
   { code, channel = null }: { code: string, channel: Channel | null },
 ): Promise<Emote | null> {
   if (channel === null) {
-    const trendingEmotes = await listTop();
+    const trendingEmotes = await listTop({});
     let emote = trendingEmotes.find(e => e.code.toLowerCase() == code.toLowerCase()) ?? null;
     if (!emote) {
       emote = await findCode(code);
@@ -194,4 +198,4 @@ async function find(
   return null;
 }
 
-export { Emote, find };
+export { Emote, listTop, find };

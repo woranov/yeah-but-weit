@@ -1,6 +1,8 @@
 import { Router } from "itty-router";
 import { errorHandler, notFoundHandler } from "./handlers/common";
 import { makeHandler } from "./handlers/emotes";
+import { listTop as listTopBttvEmotes } from "./emotes/bttv";
+
 
 const router = Router();
 
@@ -23,4 +25,8 @@ router
 
 export async function handleRequest(request: Request): Promise<Response> {
   return router.handle(request).catch(errorHandler);
+}
+
+export async function handleScheduled(_: ScheduledEvent) {
+  await listTopBttvEmotes({ force: true });
 }
