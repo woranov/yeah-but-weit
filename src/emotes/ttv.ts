@@ -162,27 +162,33 @@ async function findCode(code: string): Promise<Emote | null> {
 async function find(
   { code, channel = null }: { code: string, channel: Channel | null },
 ): Promise<Emote | null> {
-  // FIXME: fucking mess
+  // FIXME: fucking mess (!)
 
-  let emote = null;
   try {
     if (channel !== null) {
       const channelEmotes = await list(channel);
-      if (!channelEmotes || !channelEmotes.find(e => e.code.toLowerCase() == code.toLowerCase())) {
-        emote = await findCode(code);
+      const foundInChannelEmotes = (
+        channelEmotes && channelEmotes.find(
+          e => e.code.toLowerCase() == code.toLowerCase()
+        )
+      ) ?? null;
+      if (foundInChannelEmotes) {
+        return foundInChannelEmotes;
+      } else {
+        const emote = await findCode(code);
         if (emote && emote instanceof GlobalEmote) {
           return emote;
         }
       }
     } else {
-      emote = await findCode(code);
+      const emote = await findCode(code);
       if (emote) {
         return emote;
       }
     }
   } catch (e) {
     if (e instanceof TwitchEmotesApiIsFuckedAgain) {
-      emote = await findCode(code);
+      const emote = await findCode(code);
       if (emote !== null && channel !== null) {
         if (
           emote instanceof ChannelEmote
