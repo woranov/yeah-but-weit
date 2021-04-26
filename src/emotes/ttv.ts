@@ -50,7 +50,7 @@ class ChannelEmote extends BaseChannelEmote {
 type Emote = GlobalEmote | ChannelEmote;
 
 
-class TwitchEmotesApiIsFuckedAgain extends Error {
+class TwitchEmotesApiSentIncorrect404 extends Error {
 }
 
 
@@ -78,7 +78,7 @@ async function list(channel: Channel): Promise<Emote[] | null> {
         response.status == 404
         && (await response.json()).error.toLowerCase().includes("channel not found")
       ) {
-        throw new TwitchEmotesApiIsFuckedAgain();
+        throw new TwitchEmotesApiSentIncorrect404();
       }
     }
   }
@@ -163,7 +163,7 @@ async function findCode(code: string): Promise<Emote | null> {
 async function find(
   { code, channel = null }: { code: string, channel: Channel | null },
 ): Promise<Emote | null> {
-  // FIXME: fucking mess (!)
+  // FIXME: refactor
 
   if (!checkEmoteCode({ emoteCode: code, caseSensitive: false })) {
     return null;
@@ -193,7 +193,7 @@ async function find(
     }
   } catch (e) {
     if (
-      e instanceof TwitchEmotesApiIsFuckedAgain
+      e instanceof TwitchEmotesApiSentIncorrect404
       && checkEmoteCode({ emoteCode: code, caseSensitive: true })
     ) {
       const emote = await findCode(code);
