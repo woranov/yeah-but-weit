@@ -1,5 +1,4 @@
 - [ ] Check if strings are invalid to send 404 early.
 - [ ] Global BTTV/FFZ emotes.
-- [ ] `goto=channel` query parameter.
 - [ ] `index=n` query parameter to index multiple matches.
 - [ ] `goto=tester` query parameter redirecting to https://emotetester.gempir.com/.

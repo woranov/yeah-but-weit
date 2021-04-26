@@ -1,7 +1,7 @@
 import { Request } from "itty-router";
 
 import { fetchTwitchChannelId } from "../twitch";
-import { BaseEmote, find } from "../emotes";
+import { BaseEmote, BaseChannelEmote, find } from "../emotes";
 import { createHtml, notFoundHandler } from "./common";
 
 
@@ -53,6 +53,14 @@ export const makeHandler = (provider: EmoteProviderName | null = null) => {
             case "info":
             case "page":
               return Response.redirect(emote.infoUrl, 302);
+            case "channel":
+              if (emote instanceof BaseChannelEmote) {
+                return Response.redirect(
+                  `https://www.twitch.tv/${emote.creatorDisplayName.toLowerCase()}`, 302
+                );
+              } else {
+                return notFoundHandler();
+              }
           }
         }
       }

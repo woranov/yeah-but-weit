@@ -1,7 +1,7 @@
 import * as Ttv from "./ttv";
 import * as Bttv from "./bttv";
 import * as Ffz from "./ffz";
-import { BaseEmote } from "./base";
+import { BaseEmote, BaseChannelEmote } from "./base";
 
 
 const EMOTE_PROVIDERS = {
@@ -47,4 +47,4 @@ async function find(
 }
 
 export { find };
-export { BaseEmote } from "./base";
+export { BaseEmote, BaseChannelEmote } from "./base";
