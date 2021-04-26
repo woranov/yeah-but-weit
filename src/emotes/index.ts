@@ -1,7 +1,7 @@
 import * as Ttv from "./ttv";
 import * as Bttv from "./bttv";
 import * as Ffz from "./ffz";
-import { BaseEmote, BaseChannelEmote } from "./base";
+import { BaseChannelEmote, BaseEmote } from "./base";
 
 
 const EMOTE_PROVIDERS = {

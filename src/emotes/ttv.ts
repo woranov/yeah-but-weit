@@ -174,7 +174,7 @@ async function find(
       const channelEmotes = await list(channel);
       const foundInChannelEmotes = (
         channelEmotes && channelEmotes.find(
-          e => e.code.toLowerCase() == code.toLowerCase()
+          e => e.code.toLowerCase() == code.toLowerCase(),
         )
       ) ?? null;
       if (foundInChannelEmotes) {
@@ -185,7 +185,7 @@ async function find(
           return emote;
         }
       }
-    } else if (checkEmoteCode( { emoteCode: code, caseSensitive: true })) {
+    } else if (checkEmoteCode({ emoteCode: code, caseSensitive: true })) {
       const emote = await findCode(code);
       if (emote) {
         return emote;
@@ -194,7 +194,7 @@ async function find(
   } catch (e) {
     if (
       e instanceof TwitchEmotesApiIsFuckedAgain
-      && checkEmoteCode( { emoteCode: code, caseSensitive: true })
+      && checkEmoteCode({ emoteCode: code, caseSensitive: true })
     ) {
       const emote = await findCode(code);
       if (emote !== null && channel !== null) {

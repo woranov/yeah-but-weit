@@ -1,7 +1,7 @@
 import { Request } from "itty-router";
 
 import { checkChannelName, fetchTwitchChannelId } from "../twitch";
-import { BaseEmote, BaseChannelEmote, find } from "../emotes";
+import { BaseChannelEmote, BaseEmote, find } from "../emotes";
 import { createHtml, notFoundHandler } from "./common";
 
 
@@ -60,7 +60,7 @@ export const makeHandler = (provider: EmoteProviderName | null = null) => {
             case "channel":
               if (emote instanceof BaseChannelEmote) {
                 return Response.redirect(
-                  `https://www.twitch.tv/${emote.creatorDisplayName.toLowerCase()}`, 302
+                  `https://www.twitch.tv/${emote.creatorDisplayName.toLowerCase()}`, 302,
                 );
               } else {
                 return notFoundHandler();
@@ -70,7 +70,7 @@ export const makeHandler = (provider: EmoteProviderName | null = null) => {
             case "emotetester":
               return Response.redirect(
                 `https://emotetester.gempir.com/?emoteUrl=${encodeURIComponent(emote.imageUrl)}&resize=1`,
-                302
+                302,
               );
           }
         }
