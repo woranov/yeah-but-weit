@@ -1,6 +1,6 @@
 import { Request } from "itty-router";
 
-import { fetchTwitchChannelId } from "../twitch";
+import { checkChannelName, fetchTwitchChannelId } from "../twitch";
 import { BaseEmote, BaseChannelEmote, find } from "../emotes";
 import { createHtml, notFoundHandler } from "./common";
 
@@ -24,6 +24,10 @@ export const makeHandler = (provider: EmoteProviderName | null = null) => {
     let channel: Channel | null = null;
 
     if (channelName) {
+      if (!checkChannelName(channelName)) {
+        return notFoundHandler();
+      }
+
       const channelId = await fetchTwitchChannelId(channelName);
 
       if (channelId === null)

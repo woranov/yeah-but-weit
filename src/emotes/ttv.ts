@@ -1,5 +1,6 @@
 import { BaseChannelEmote, BaseEmote } from "./base";
 import { CACHE_TTL } from "../config";
+import { checkEmoteCode } from "../twitch";
 
 
 class GlobalEmote extends BaseEmote {
@@ -164,6 +165,10 @@ async function find(
 ): Promise<Emote | null> {
   // FIXME: fucking mess (!)
 
+  if (!checkEmoteCode({ emoteCode: code, caseSensitive: false })) {
+    return null;
+  }
+
   try {
     if (channel !== null) {
       const channelEmotes = await list(channel);
@@ -180,14 +185,17 @@ async function find(
           return emote;
         }
       }
-    } else {
+    } else if (checkEmoteCode( { emoteCode: code, caseSensitive: true })) {
       const emote = await findCode(code);
       if (emote) {
         return emote;
       }
     }
   } catch (e) {
-    if (e instanceof TwitchEmotesApiIsFuckedAgain) {
+    if (
+      e instanceof TwitchEmotesApiIsFuckedAgain
+      && checkEmoteCode( { emoteCode: code, caseSensitive: true })
+    ) {
       const emote = await findCode(code);
       if (emote !== null && channel !== null) {
         if (
