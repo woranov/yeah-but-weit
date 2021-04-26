@@ -61,6 +61,13 @@ export const makeHandler = (provider: EmoteProviderName | null = null) => {
               } else {
                 return notFoundHandler();
               }
+            case "test":
+            case "tester":
+            case "emotetester":
+              return Response.redirect(
+                `https://emotetester.gempir.com/?emoteUrl=${encodeURIComponent(emote.imageUrl)}&resize=1`,
+                302
+              );
           }
         }
       }
