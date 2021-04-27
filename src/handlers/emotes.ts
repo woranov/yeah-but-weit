@@ -4,6 +4,81 @@ import { checkChannelName, fetchTwitchChannelId } from "../twitch";
 import { BaseChannelEmote, BaseEmote, find } from "../emotes";
 import { createHtml, notFoundHandler } from "./common";
 
+const REDIRECT_PROPERTIES = [
+  "EMOTE_IMAGE_URL", "EMOTE_INFO_PAGE_URL", "EMOTE_TESTER_URL", "EMOTE_CREATOR_CHANNEL_URL",
+] as const;
+type RedirectProperty = typeof REDIRECT_PROPERTIES[number];
+
+const EMOTE_ATTRIBUTE_PROPERTIES = [
+  "EMOTE_CODE", "EMOTE_CREATOR", "EMOTE_DESCRIPTION", "WEIT_URL",
+] as const;
+type EmoteAttributeProperty = typeof EMOTE_ATTRIBUTE_PROPERTIES[number];
+
+type Property = RedirectProperty | EmoteAttributeProperty;
+type RedirectPropertyAliasesType = Record<RedirectProperty, string[]>;
+type EmotePropertyAliasesType = Record<EmoteAttributeProperty, string[]>;
+
+const REDIRECT_PROPERTY_ALIASES: RedirectPropertyAliasesType = {
+  EMOTE_IMAGE_URL: [
+    "image", "file", "dl", "imageurl", "fileurl", "dlurl",
+  ],
+  EMOTE_INFO_PAGE_URL: [
+    "info", "page", "infopage", "infourl", "pageurl", "infopageurl",
+  ],
+  EMOTE_TESTER_URL: [
+    "test", "tester", "emotetester", "testurl", "testerurl", "emotetesterurl",
+  ],
+  EMOTE_CREATOR_CHANNEL_URL: [
+    "channel", "channelurl",
+  ],
+};
+
+const EMOTE_PROPERTY_ALIASES: EmotePropertyAliasesType = {
+  EMOTE_CODE: [
+    "code", "emote", "emotecode",
+  ],
+  EMOTE_CREATOR: [
+    "creator",
+  ],
+  EMOTE_DESCRIPTION: [
+    "description",
+  ],
+  WEIT_URL: [
+    "weiturl",
+  ],
+};
+
+
+function getProperty(request: Request, emote: BaseEmote, property: Property): string | null {
+  switch (property) {
+    case "EMOTE_CODE":
+      return emote.code;
+    case "EMOTE_DESCRIPTION":
+      return emote.description;
+    case "EMOTE_CREATOR":
+      if (emote instanceof BaseChannelEmote) {
+        return emote.creatorDisplayName.toLowerCase();
+      } else {
+        return null;
+      }
+    case "WEIT_URL":
+      const url = new URL(request.url);
+      return url.hostname + new URL(request.url).pathname;
+    case "EMOTE_IMAGE_URL":
+      return emote.imageUrl;
+    case "EMOTE_INFO_PAGE_URL":
+      return emote.infoUrl;
+    case "EMOTE_CREATOR_CHANNEL_URL":
+      if (emote instanceof BaseChannelEmote) {
+        return `https://www.twitch.tv/${emote.creatorDisplayName.toLowerCase()}`;
+      } else {
+        return null;
+      }
+    case "EMOTE_TESTER_URL":
+      return `https://emotetester.gempir.com/?emoteUrl=${encodeURIComponent(emote.imageUrl)}&resize=1`;
+  }
+}
+
 
 function createEmoteResponseHtml(emote: BaseEmote): string {
   return createHtml({
@@ -43,37 +118,65 @@ export const makeHandler = (provider: EmoteProviderName | null = null) => {
       { code, channel, provider: provider },
     );
 
+    let getRawKey = null;
+    let goToKey = null;
+    if (request.query) {
+      getRawKey = Object.keys(request.query).find(
+        k => k.toLowerCase() === "raw",
+      );
+      goToKey = Object.keys(request.query).find(
+        k => k.toLowerCase() === "goto",
+      );
+    }
+    if (!emote && getRawKey) {
+      return new Response("Emote not found", { status: 404 });
+    }
     if (emote) {
-      if (request.query) {
-        const goToKey = Object.keys(request.query).find(
-          k => k.toLowerCase() === "goto",
-        );
-        if (goToKey) {
-          switch (request.query[goToKey].toLowerCase()) {
-            case "image":
-            case "file":
-            case "dl":
-              return Response.redirect(emote.imageUrl, 302);
-            case "info":
-            case "page":
-              return Response.redirect(emote.infoUrl, 302);
-            case "channel":
-              if (emote instanceof BaseChannelEmote) {
-                return Response.redirect(
-                  `https://www.twitch.tv/${emote.creatorDisplayName.toLowerCase()}`, 302,
-                );
-              } else {
-                return notFoundHandler();
+      if (getRawKey) {
+        const getRawValues = request.query![getRawKey].toLowerCase()
+          .split(",")
+          .map(s => s.trim())
+          .filter(Boolean);
+
+        if (getRawValues.length === 0) {
+          getRawValues.push("weiturl", "description");
+        }
+        let output = "";
+        for (const rawValue of getRawValues) {
+          for (const [prop, propAliases] of <[Property, string[]][]>Object.entries(
+            Object.assign({}, EMOTE_PROPERTY_ALIASES, REDIRECT_PROPERTY_ALIASES),
+          )) {
+            if (propAliases.includes(rawValue)) {
+              const value = getProperty(request, emote, prop);
+              if (value) {
+                if ((<Property[]>["WEIT_URL", "EMOTE_CODE", ...REDIRECT_PROPERTIES]).includes(prop)) {
+                  output += `${value} `;
+                } else {
+                  output += `${value}, `;
+                }
               }
-            case "test":
-            case "tester":
-            case "emotetester":
-              return Response.redirect(
-                `https://emotetester.gempir.com/?emoteUrl=${encodeURIComponent(emote.imageUrl)}&resize=1`,
-                302,
-              );
+            }
           }
         }
+        output = output.slice(0, -1);
+        if (output.endsWith(",")) {
+          output = output.slice(0, -1);
+        }
+
+        return new Response(output);
+
+      } else if (goToKey) {
+        const goToValue = request.query![goToKey].toLowerCase();
+        for (const [prop, propAliases] of <[Property, string[]][]>Object.entries(REDIRECT_PROPERTY_ALIASES)) {
+          if (propAliases.includes(goToValue)) {
+            const value = getProperty(request, emote, prop);
+            if (value) {
+              return Response.redirect(value, 302);
+            }
+            break;
+          }
+        }
+        return notFoundHandler();
       }
       return new Response(createEmoteResponseHtml(emote), {
         headers: { "Content-type": "text/html" },
