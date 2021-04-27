@@ -1,5 +1,5 @@
 import { BaseChannelEmote, BaseGlobalEmote } from "./base";
-import { formatNumber } from "../formatting";
+import { formatNumber, pluralize } from "../formatting";
 import { CACHE_TTL, LONG_CACHE_TTL } from "../config";
 
 
@@ -43,7 +43,7 @@ class ChannelEmote extends BaseChannelEmote {
     }
     description += `, by ${this.creatorDisplayName}`;
     if (this.usageCount !== null) {
-      description += `, available in ${formatNumber(this.usageCount)} channels`;
+      description += `, available in ${formatNumber(this.usageCount)} ${pluralize("channel", this.usageCount)}`;
     }
     return description;
   }

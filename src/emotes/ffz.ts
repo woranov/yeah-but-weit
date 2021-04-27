@@ -1,5 +1,5 @@
 import { BaseChannelEmote, BaseGlobalEmote } from "./base";
-import { formatNumber } from "../formatting";
+import { formatNumber, pluralize } from "../formatting";
 import { CACHE_TTL } from "../config";
 
 
@@ -50,7 +50,7 @@ class ChannelEmote extends BaseChannelEmote {
   }
 
   get description(): string {
-    return `FFZ Emote, by ${this.creatorDisplayName}, available in ${formatNumber(this.usageCount)} channels`;
+    return `FFZ Emote, by ${this.creatorDisplayName}, available in ${formatNumber(this.usageCount)} ${pluralize("channel", this.usageCount)}`;
   }
 
   get imageUrl(): string {
