@@ -111,7 +111,7 @@ async function listTop({ count = 4_500, force = false }: {
   }
 
   return emoteData.map(e => new Emote({
-    id: e.emote.id, code: e.emote.code, creatorDisplayName: e.emote.user.displayName, usageCount: e.total,
+    id: e.emote.id, code: e.emote.code, creatorDisplayName: e.emote.user.displayName, usageCount: e.total + 1,
   }));
 }
 
@@ -169,7 +169,7 @@ async function findCode(code: string, considerOldestN: number = 5): Promise<Emot
       id: currBestEmote!.id,
       code: currBestEmote!.code,
       creatorDisplayName: currBestEmote!.user.displayName,
-      usageCount: currMaxCount,
+      usageCount: currMaxCount + 1,
     });
   }
 
