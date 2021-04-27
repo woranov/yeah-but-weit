@@ -99,6 +99,17 @@ interface FfzEmoteListResult {
 }
 
 
+interface FfzGlobalEmoteListResult {
+  default_sets: number[];
+  users: { [key: string]: string[] };
+  sets: {
+    [key: string]: {
+      emoticons: FfzEmoteEntry[];
+    };
+  };
+}
+
+
 interface FfzEmoteSearchResult {
   emoticons: FfzEmoteEntry[];
 }

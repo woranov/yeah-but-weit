@@ -1,3 +1,2 @@
 - [ ] Check if bttv/ffz emote codes are invalid to send 404 early.
-- [ ] Global BTTV/FFZ emotes.
 - [ ] `index=n` query parameter to index multiple matches.

@@ -20,6 +20,10 @@ export abstract class BaseEmote {
 }
 
 
+export abstract class BaseGlobalEmote extends BaseEmote {
+}
+
+
 export abstract class BaseChannelEmote extends BaseEmote {
   readonly creatorDisplayName: string;
 

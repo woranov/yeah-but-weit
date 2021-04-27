@@ -1,7 +1,7 @@
 import * as Ttv from "./ttv";
 import * as Bttv from "./bttv";
 import * as Ffz from "./ffz";
-import { BaseChannelEmote, BaseEmote } from "./base";
+import { BaseChannelEmote, BaseEmote, BaseGlobalEmote } from "./base";
 
 
 const EMOTE_PROVIDERS = {
@@ -21,7 +21,7 @@ async function find(
   let candidates: BaseEmote[] = [];
   for (const provider of providers) {
     const emote = await EMOTE_PROVIDERS[provider].find({ code, channel });
-    if (emote && provider == "ttv") {
+    if (emote && (provider == "ttv" || emote instanceof BaseGlobalEmote)) {
       return emote;
     } else if (emote) {
       candidates.push(emote);
@@ -31,10 +31,10 @@ async function find(
     let mostPopular = null;
     let maxCount = -1;
     for (const candidate of candidates) {
-      if (candidate instanceof Bttv.Emote && candidate.usageCount === null) {
+      if (candidate instanceof Bttv.ChannelEmote && candidate.usageCount === null) {
         return candidate;
-      } else if ((<Bttv.Emote | Ffz.Emote>candidate).usageCount! > maxCount) {
-        maxCount = (<Bttv.Emote | Ffz.Emote>candidate).usageCount!;
+      } else if ((<Bttv.ChannelEmote | Ffz.ChannelEmote>candidate).usageCount! > maxCount) {
+        maxCount = (<Bttv.ChannelEmote | Ffz.ChannelEmote>candidate).usageCount!;
         mostPopular = candidate;
       }
     }

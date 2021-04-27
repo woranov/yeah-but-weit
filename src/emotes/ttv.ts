@@ -1,9 +1,9 @@
-import { BaseChannelEmote, BaseEmote } from "./base";
+import { BaseChannelEmote, BaseGlobalEmote } from "./base";
 import { CACHE_TTL } from "../config";
 import { checkEmoteCode } from "../twitch";
 
 
-class GlobalEmote extends BaseEmote {
+class GlobalEmote extends BaseGlobalEmote {
   get description(): string {
     return "Global Twitch Emote";
   }
@@ -215,4 +215,4 @@ async function find(
 }
 
 
-export { Emote, find };
+export { ChannelEmote, GlobalEmote, find };

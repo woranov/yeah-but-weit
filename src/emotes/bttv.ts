@@ -1,9 +1,24 @@
-import { BaseChannelEmote } from "./base";
+import { BaseChannelEmote, BaseGlobalEmote } from "./base";
 import { formatNumber } from "../formatting";
 import { CACHE_TTL, LONG_CACHE_TTL } from "../config";
 
 
-class Emote extends BaseChannelEmote {
+class GlobalEmote extends BaseGlobalEmote {
+  get description(): string {
+    return "Global BTTV Emote";
+  }
+
+  get imageUrl(): string {
+    return `https://cdn.betterttv.net/emote/${this.id}/3x`;
+  }
+
+  get infoUrl(): string {
+    return `https://betterttv.com/emotes/${this.id}`;
+  }
+}
+
+
+class ChannelEmote extends BaseChannelEmote {
   readonly usageCount: number | null;
   readonly #isShared: boolean | null;
 
@@ -43,7 +58,34 @@ class Emote extends BaseChannelEmote {
 }
 
 
-async function list(channel: Channel): Promise<Emote[] | null> {
+type Emote = GlobalEmote | ChannelEmote;
+
+
+async function listGlobal(): Promise<GlobalEmote[] | null> {
+  const key = `list:bttv:global`;
+
+  let data = <BttvEmoteEntry[] | null>await EMOTES.get(key, "json");
+
+  if (!data) {
+    const response = await fetch(
+      "https://api.betterttv.net/3/cached/emotes/global",
+    );
+
+    if (response.ok) {
+      data = <BttvEmoteEntry[]>await response.json();
+      await EMOTES.put(key, JSON.stringify(data), { expirationTtl: CACHE_TTL });
+    }
+  }
+
+  if (data) {
+    return data.map(e => new GlobalEmote({ id: e.id, code: e.code }));
+  } else {
+    return null;
+  }
+}
+
+
+async function listChannel(channel: Channel): Promise<ChannelEmote[] | null> {
   const key = `list:bttv:${channel.id}`;
 
   let data = <BttvEmoteListResult | null>await EMOTES.get(key, "json");
@@ -64,10 +106,10 @@ async function list(channel: Channel): Promise<Emote[] | null> {
       ...data.sharedEmotes.map((
         { id, code, user: { displayName: creatorDisplayName } }: BttvSharedEmoteEntry,
       ) => {
-        return new Emote({ id, code, creatorDisplayName, isShared: true });
+        return new ChannelEmote({ id, code, creatorDisplayName, isShared: true });
       }),
       ...data.channelEmotes.map(({ id, code }: BttvChannelEmoteEntry) => {
-        return new Emote({ id, code, creatorDisplayName: channel.name, isShared: false });
+        return new ChannelEmote({ id, code, creatorDisplayName: channel.name, isShared: false });
       }),
     ];
   } else {
@@ -78,7 +120,7 @@ async function list(channel: Channel): Promise<Emote[] | null> {
 
 async function listTop({ count = 4_500, force = false }: {
   count?: number, force?: boolean
-}): Promise<Emote[]> {
+}): Promise<ChannelEmote[]> {
   const key = "list:bttv:top";
   const perPage = 100;
   let emoteData = force
@@ -110,13 +152,13 @@ async function listTop({ count = 4_500, force = false }: {
       );
   }
 
-  return emoteData.map(e => new Emote({
+  return emoteData.map(e => new ChannelEmote({
     id: e.emote.id, code: e.emote.code, creatorDisplayName: e.emote.user.displayName, usageCount: e.total + 1,
   }));
 }
 
 
-async function findCode(code: string, considerOldestN: number = 5): Promise<Emote | null> {
+async function findCode(code: string, considerOldestN: number = 5): Promise<ChannelEmote | null> {
   const key = `search:bttv:${code}`;
   const perPage = 100;
   let emoteData: BttvEmoteSearchResultEntry[] | null = <BttvEmoteSearchResultEntry[] | null>await EMOTES.get(key, "json");
@@ -165,7 +207,7 @@ async function findCode(code: string, considerOldestN: number = 5): Promise<Emot
         currMaxCount = count;
       }
     }
-    return new Emote({
+    return new ChannelEmote({
       id: currBestEmote!.id,
       code: currBestEmote!.code,
       creatorDisplayName: currBestEmote!.user.displayName,
@@ -180,22 +222,27 @@ async function findCode(code: string, considerOldestN: number = 5): Promise<Emot
 async function find(
   { code, channel = null }: { code: string, channel: Channel | null },
 ): Promise<Emote | null> {
-  if (channel === null) {
+  let emote = null;
+  {
+    const globalEmotes = await listGlobal();
+    if (globalEmotes) {
+      emote = globalEmotes.find(e => e.code.toLowerCase() == code.toLowerCase()) ?? null;
+    }
+  }
+  if (!emote && channel) {
+    const channelEmotes = await listChannel(channel);
+    if (channelEmotes) {
+      emote = channelEmotes.find(e => e.code.toLowerCase() == code.toLowerCase()) ?? null;
+    }
+  }
+  if (!emote) {
     const trendingEmotes = await listTop({});
-    let emote = trendingEmotes.find(e => e.code.toLowerCase() == code.toLowerCase()) ?? null;
+    emote = trendingEmotes.find(e => e.code.toLowerCase() == code.toLowerCase()) ?? null;
     if (!emote) {
       emote = await findCode(code);
     }
-    if (emote) {
-      return emote;
-    }
-  } else {
-    const channelEmotes = await list(channel);
-    if (channelEmotes) {
-      return channelEmotes.find(e => e.code.toLowerCase() == code.toLowerCase()) ?? null;
-    }
   }
-  return null;
+  return emote;
 }
 
-export { Emote, listTop, find };
+export { ChannelEmote, GlobalEmote, find, listTop };
