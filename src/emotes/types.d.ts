@@ -111,6 +111,7 @@ interface FfzGlobalEmoteListResult {
 
 
 interface FfzEmoteSearchResult {
+  _pages: number;
   emoticons: FfzEmoteEntry[];
 }
 
