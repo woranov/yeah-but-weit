@@ -170,7 +170,7 @@ async function find(
   }
 
   try {
-    if (channel !== null) {
+    if (channel !== null && checkEmoteCode({ emoteCode: code, caseSensitive: true })) {
       const channelEmotes = await list(channel);
       const foundInChannelEmotes = (
         channelEmotes && channelEmotes.find(
@@ -185,7 +185,7 @@ async function find(
           return emote;
         }
       }
-    } else if (checkEmoteCode({ emoteCode: code, caseSensitive: true })) {
+    } else {
       const emote = await findCode(code);
       if (emote) {
         return emote;
