@@ -170,45 +170,40 @@ async function find(
   }
 
   try {
-    if (channel !== null && checkEmoteCode({ emoteCode: code, caseSensitive: true })) {
+    if (channel) {
+      // check channel emote list
       const channelEmotes = await list(channel);
-      const foundInChannelEmotes = (
+      let emote = (
         channelEmotes && channelEmotes.find(
           e => e.code.toLowerCase() == code.toLowerCase(),
         )
       ) ?? null;
-      if (foundInChannelEmotes) {
-        return foundInChannelEmotes;
-      } else {
-        const emote = await findCode(code);
+      if (!emote && checkEmoteCode({ emoteCode: code, caseSensitive: true })) {
+        // must be a global emote
+        emote = await findCode(code);
         if (emote && emote instanceof GlobalEmote) {
           return emote;
         }
       }
     } else {
-      const emote = await findCode(code);
-      if (emote) {
-        return emote;
-      }
+      return await findCode(code);
     }
   } catch (e) {
-    if (
-      e instanceof TwitchEmotesApiSentIncorrect404
-      && checkEmoteCode({ emoteCode: code, caseSensitive: true })
+    if (!(e instanceof TwitchEmotesApiSentIncorrect404)) {
+      throw e;
+    } else if (
+      checkEmoteCode({ emoteCode: code, caseSensitive: true })
     ) {
-      const emote = await findCode(code);
-      if (emote !== null && channel !== null) {
+      let emote = await findCode(code);
+      if (emote && channel) {
+        // must match channel
         if (
           emote instanceof ChannelEmote
-          && emote.creatorDisplayName.toLowerCase() == channel.name
+          && emote.creatorDisplayName.toLowerCase() === channel.name
         ) {
           return emote;
         }
-      } else if (emote !== null) {
-        return emote;
       }
-    } else {
-      throw e;
     }
   }
   return null;
