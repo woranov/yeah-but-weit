@@ -3,6 +3,9 @@ import { formatNumber, pluralize } from "../formatting";
 import { CACHE_TTL, LONG_CACHE_TTL } from "../config";
 
 
+const EMOTE_CODE_REGEX = /^(\w{3,}|:\w+:)$/;
+
+
 class GlobalEmote extends BaseGlobalEmote {
   get description(): string {
     return "Global BTTV Emote";
@@ -218,10 +221,14 @@ async function findCode(code: string, considerOldestN: number = 5): Promise<Chan
   return null;
 }
 
-// noinspection JSUnusedGlobalSymbols
+// noinspection JSUnusedGlobalSymbols, DuplicatedCode
 async function find(
   { code, channel = null }: { code: string, channel: Channel | null },
 ): Promise<Emote | null> {
+  if (!EMOTE_CODE_REGEX.test(code)) {
+    return null;
+  }
+
   let emote = null;
   {
     const globalEmotes = await listGlobal();

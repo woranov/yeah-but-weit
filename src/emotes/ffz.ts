@@ -3,6 +3,9 @@ import { formatNumber, pluralize } from "../formatting";
 import { CACHE_TTL } from "../config";
 
 
+const EMOTE_CODE_REGEX = /^(!|\w){3,}$/;
+
+
 class GlobalEmote extends BaseGlobalEmote {
   readonly #maxScale: number;
 
@@ -167,6 +170,10 @@ async function findCode(code: string): Promise<ChannelEmote[] | null> {
 async function find(
   { code, channel = null }: { code: string, channel: Channel | null },
 ): Promise<Emote | null> {
+  if (!EMOTE_CODE_REGEX.test(code)) {
+    return null;
+  }
+
   let emote = null;
   {
     const globalEmotes = await listGlobal();
