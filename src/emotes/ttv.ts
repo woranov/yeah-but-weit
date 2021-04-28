@@ -164,8 +164,6 @@ async function findCode(code: string): Promise<Emote | null> {
 async function find(
   { code, channel = null }: { code: string, channel: Channel | null },
 ): Promise<Emote | null> {
-  // FIXME: refactor
-
   if (!checkEmoteCode({ emoteCode: code, caseSensitive: false })) {
     return null;
   }
@@ -187,7 +185,7 @@ async function find(
           return emote;
         }
       }
-    } else {
+    } else if (checkEmoteCode({ emoteCode: code, caseSensitive: true })) {
       return await findCode(code);
     }
   } catch (e) {
