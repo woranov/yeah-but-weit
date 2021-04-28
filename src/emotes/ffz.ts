@@ -1,6 +1,7 @@
 import { BaseChannelEmote, BaseGlobalEmote } from "./base";
 import { formatNumber, pluralize } from "../formatting";
 import { CACHE_TTL } from "../config";
+import { preferCaseSensitiveFind } from "./common";
 
 
 const EMOTE_CODE_REGEX = /^(!|\w){3,}$/;
@@ -198,7 +199,7 @@ async function find(
   {
     const globalEmotes = await listGlobal();
     if (globalEmotes) {
-      emote = globalEmotes.find(e => e.code.toLowerCase() == code.toLowerCase()) ?? null;
+      emote = preferCaseSensitiveFind(globalEmotes, code);
     }
   }
   if (!emote && channel) {
@@ -210,10 +211,7 @@ async function find(
   if (!emote) {
     const result = await findCode(code);
     if (result && result.length >= 1) {
-      const candidateEmote = result[0];
-      if (candidateEmote.code.toLowerCase() == code.toLowerCase()) {
-        emote = candidateEmote;
-      }
+      emote = preferCaseSensitiveFind(result, code);
     }
   }
   return emote;

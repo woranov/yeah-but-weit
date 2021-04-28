@@ -11,22 +11,7 @@ const EMOTE_PROVIDERS = {
 };
 
 
-async function find(
-  { code, channel = null, provider = null }: {
-    code: string, channel: Channel | null, provider: EmoteProviderName | null
-  },
-): Promise<BaseEmote | null> {
-  const providers: EmoteProviderName[] = provider ? [provider] : ["ttv", "bttv", "ffz"];
-
-  let candidates: BaseEmote[] = [];
-  for (const provider of providers) {
-    const emote = await EMOTE_PROVIDERS[provider].find({ code, channel });
-    if (emote && (provider == "ttv" || emote instanceof BaseGlobalEmote)) {
-      return emote;
-    } else if (emote) {
-      candidates.push(emote);
-    }
-  }
+function mostPopularCandidate(candidates: BaseEmote[]): BaseEmote | null {
   if (candidates.length >= 2) {
     let mostPopular = null;
     let maxCount = -1;
@@ -44,6 +29,34 @@ async function find(
   } else {
     return null;
   }
+}
+
+
+async function find(
+  { code, channel = null, provider = null }: {
+    code: string, channel: Channel | null, provider: EmoteProviderName | null
+  },
+): Promise<BaseEmote | null> {
+  const providers: EmoteProviderName[] = provider ? [provider] : ["ttv", "bttv", "ffz"];
+
+  let candidates: BaseEmote[] = [];
+  for (const provider of providers) {
+    const emote = await EMOTE_PROVIDERS[provider].find({ code, channel });
+    if (emote && (provider == "ttv" || emote instanceof BaseGlobalEmote)) {
+      return emote;
+    } else if (emote) {
+      candidates.push(emote);
+    }
+  }
+
+  let mostPopular = null;
+  if (code.toLowerCase() !== code) {
+    mostPopular = mostPopularCandidate(candidates.filter(e => e.code === code));
+  }
+  if (!mostPopular) {
+    mostPopular = mostPopularCandidate(candidates);
+  }
+  return mostPopular;
 }
 
 export { find };

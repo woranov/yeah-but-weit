@@ -1,6 +1,7 @@
 import { BaseChannelEmote, BaseGlobalEmote } from "./base";
 import { CACHE_TTL } from "../config";
 import { checkEmoteCode } from "../twitch";
+import { preferCaseSensitiveFind } from "./common";
 
 
 class GlobalEmote extends BaseGlobalEmote {
@@ -173,14 +174,15 @@ async function find(
     if (channel) {
       // check channel emote list
       const channelEmotes = await list(channel);
-      let emote = (
-        channelEmotes && channelEmotes.find(
-          e => e.code.toLowerCase() == code.toLowerCase(),
-        )
+      const emote = (
+        channelEmotes && preferCaseSensitiveFind(channelEmotes, code)
       ) ?? null;
-      if (!emote && checkEmoteCode({ emoteCode: code, caseSensitive: true })) {
-        // must be a global emote
-        emote = await findCode(code);
+
+      if (emote) {
+        return emote;
+      } else if (checkEmoteCode({ emoteCode: code, caseSensitive: true })) {
+        // not found in channel emote list, so it must be a global emote
+        const emote = await findCode(code);
         if (emote && emote instanceof GlobalEmote) {
           return emote;
         }

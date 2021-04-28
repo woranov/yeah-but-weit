@@ -1,6 +1,7 @@
 import { BaseChannelEmote, BaseGlobalEmote } from "./base";
 import { formatNumber, pluralize } from "../formatting";
 import { CACHE_TTL, LONG_CACHE_TTL } from "../config";
+import { preferCaseSensitiveFind } from "./common";
 
 
 const EMOTE_CODE_REGEX = /^(\w{3,}|:\w+:)$/;
@@ -62,6 +63,14 @@ class ChannelEmote extends BaseChannelEmote {
 
 
 type Emote = GlobalEmote | ChannelEmote;
+
+
+async function fetchUsageCount(emoteId: string): Promise<number> {
+  const response = await fetch(
+    `https://api.betterttv.net/3/emotes/${emoteId}/shared`,
+  );
+  return parseInt(response.headers.get("x-total")!);
+}
 
 
 async function listGlobal(): Promise<GlobalEmote[] | null> {
@@ -198,24 +207,27 @@ async function findCode(code: string, considerOldestN: number = 5): Promise<Chan
       );
   }
   if (emoteData.length > 0) {
-    let currBestEmote: BttvEmoteSearchResultEntry | null = null;
-    let currMaxCount = -1;
-    for (const emoteEntry of <BttvEmoteSearchResultEntry[]>emoteData.slice(-considerOldestN).reverse()) {
-      const response = await fetch(
-        `https://api.betterttv.net/3/emotes/${emoteEntry.id}/shared`,
-      );
-      const count = parseInt(response.headers.get("x-total")!);
-      if (count > currMaxCount) {
-        currBestEmote = emoteEntry;
-        currMaxCount = count;
-      }
+    const entriesWithUsageCount = await Promise.all(
+      (<BttvEmoteSearchResultEntry[]>emoteData
+        .slice(-considerOldestN))
+        .map(async entry => {
+          return { entry, code: entry.code, usageCount: await fetchUsageCount(entry.id) };
+        }),
+    );
+    const sortedByUsage = entriesWithUsageCount
+      .sort((a, b) => b.usageCount - a.usageCount);
+
+    const bestResult = preferCaseSensitiveFind(sortedByUsage, code);
+
+    if (bestResult) {
+      const { entry, usageCount } = bestResult;
+      return new ChannelEmote({
+        id: entry.id,
+        code: entry.code,
+        creatorDisplayName: entry.user.displayName,
+        usageCount: usageCount + 1,
+      });
     }
-    return new ChannelEmote({
-      id: currBestEmote!.id,
-      code: currBestEmote!.code,
-      creatorDisplayName: currBestEmote!.user.displayName,
-      usageCount: currMaxCount + 1,
-    });
   }
 
   return null;
@@ -233,18 +245,18 @@ async function find(
   {
     const globalEmotes = await listGlobal();
     if (globalEmotes) {
-      emote = globalEmotes.find(e => e.code.toLowerCase() == code.toLowerCase()) ?? null;
+      emote = preferCaseSensitiveFind(globalEmotes, code);
     }
   }
   if (!emote && channel) {
     const channelEmotes = await listChannel(channel);
     if (channelEmotes) {
-      emote = channelEmotes.find(e => e.code.toLowerCase() == code.toLowerCase()) ?? null;
+      emote = preferCaseSensitiveFind(channelEmotes, code);
     }
   }
   if (!emote) {
     const trendingEmotes = await listTop({});
-    emote = trendingEmotes.find(e => e.code.toLowerCase() == code.toLowerCase()) ?? null;
+    emote = preferCaseSensitiveFind(trendingEmotes, code);
     if (!emote) {
       emote = await findCode(code);
     }
