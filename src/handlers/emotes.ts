@@ -57,7 +57,7 @@ function getProperty(request: Request, emote: BaseEmote, property: Property): st
       return emote.description;
     case "EMOTE_CREATOR":
       if (emote instanceof BaseChannelEmote) {
-        return emote.creatorDisplayName.toLowerCase();
+        return emote.creatorDisplayName;
       } else {
         return null;
       }
