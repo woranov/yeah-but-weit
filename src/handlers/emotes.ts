@@ -57,7 +57,7 @@ function getProperty(request: Request, emote: BaseEmote, property: Property): st
       return emote.description;
     case "EMOTE_CREATOR":
       if (emote instanceof BaseChannelEmote) {
-        return emote.creatorDisplayName;
+        return `@${emote.creatorDisplayName}`;
       } else {
         return null;
       }
@@ -88,6 +88,7 @@ function createEmoteResponseHtml(emote: BaseEmote): string {
     title: emote.code,
     titleLink: emote.infoUrl,
     description: emote.description,
+    convertAtMentionTemplate: "<a href=\"https://www.twitch.tv/$1\">@$1</a>",
     image: {
       url: emote.imageUrl,
       alt: emote.code,

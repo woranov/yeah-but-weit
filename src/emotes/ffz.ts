@@ -54,7 +54,7 @@ class ChannelEmote extends BaseChannelEmote {
   }
 
   get description(): string {
-    return `FFZ Emote, by ${this.creatorDisplayName}, available in ${formatNumber(this.usageCount)} ${pluralize("channel", this.usageCount)}`;
+    return `FFZ Emote, by @${this.creatorDisplayName}, available in ${formatNumber(this.usageCount)} ${pluralize("channel", this.usageCount)}`;
   }
 
   get imageUrl(): string {

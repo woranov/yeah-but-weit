@@ -45,7 +45,7 @@ class ChannelEmote extends BaseChannelEmote {
     if (this.#isShared !== null) {
       description = `${this.#isShared ? "Shared" : "Channel"} ${description}`;
     }
-    description += `, by ${this.creatorDisplayName}`;
+    description += `, by @${this.creatorDisplayName}`;
     if (this.usageCount !== null) {
       description += `, available in ${formatNumber(this.usageCount)} ${pluralize("channel", this.usageCount)}`;
     }

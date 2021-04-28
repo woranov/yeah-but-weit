@@ -2,19 +2,33 @@ import { StatusError } from "../errors";
 import { DEBUG } from "../config";
 
 
-function createHtml({ title, titleLink = null, description = null, image }: {
+function createHtml({
+  title,
+  titleLink = null,
+  description = null,
+  convertAtMentionTemplate = null,
+  image,
+}: {
   title: string,
   titleLink?: string | null,
   description?: string | null,
+  convertAtMentionTemplate?: string | null,
   image: { url: string, alt: string }
 }): string {
   const h1Title = titleLink !== null
     ? `<h1><a href='${titleLink}'>${title}</a></h1>`
     : `<h1>${title}</h1>`;
 
-  const pDescription = description !== null
-    ? `<p>${description}</p>`
-    : "";
+  let pDescription = "";
+  if (description !== null) {
+    pDescription = `<p>${description}</p>`;
+    if (convertAtMentionTemplate) {
+      pDescription = pDescription.replace(
+        /@([a-zA-Z0-9_]+)/,
+        convertAtMentionTemplate,
+      );
+    }
+  }
 
   const ogDescription = description !== null
     ? `<meta property='og:description' content='${description}'>`
@@ -45,17 +59,27 @@ function createHtml({ title, titleLink = null, description = null, image }: {
             display: flex;
             align-items: center;
             justify-content: center;
+            color: whitesmoke;
           }
-          main > a, main > h1, main > p {
+          a {
+            color: cornflowerblue;
+          }
+          main {
+            text-align: center;
+          }
+          main > a {
+            display: inline-block;
+          }
+          main > h1, main > p {
             display: block;
             text-align: center;
-            color: whitesmoke;
           }
           main > a {
             cursor: zoom-in;
           }
-          main > h1 a {
-            color: aliceblue;
+          main > p a {
+            text-decoration: none;
+            font-weight: bold;
           }
         </style>
       </head>

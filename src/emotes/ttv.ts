@@ -35,7 +35,7 @@ class ChannelEmote extends BaseChannelEmote {
   }
 
   get description(): string {
-    return `Tier ${this.tier} ${this.creatorDisplayName} Emote`;
+    return `Tier ${this.tier} @${this.creatorDisplayName} Emote`;
   }
 
   get imageUrl(): string {
