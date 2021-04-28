@@ -63,7 +63,10 @@ function getProperty(request: Request, emote: BaseEmote, property: Property): st
       }
     case "WEIT_URL":
       const url = new URL(request.url);
-      return url.hostname + new URL(request.url).pathname;
+      return url.hostname + url.pathname.replace(
+        /\/[^\/]+\/?$/,
+        `/${emote.code}`
+      );
     case "EMOTE_IMAGE_URL":
       return emote.imageUrl;
     case "EMOTE_INFO_PAGE_URL":
