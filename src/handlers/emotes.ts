@@ -20,7 +20,7 @@ type EmotePropertyAliasesType = Record<EmoteAttributeProperty, string[]>;
 
 const REDIRECT_PROPERTY_ALIASES: RedirectPropertyAliasesType = {
   EMOTE_IMAGE_URL: [
-    "image", "file", "dl", "imageurl", "fileurl", "dlurl",
+    "image", "file", "dl", "imageurl", "fileurl", "dlurl", "cdn", "cdnurl",
   ],
   EMOTE_INFO_PAGE_URL: [
     "info", "page", "infopage", "infourl", "pageurl", "infopageurl",
