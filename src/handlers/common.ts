@@ -6,13 +6,13 @@ function createHtml({
   title,
   titleLink = null,
   description = null,
-  convertAtMentionTemplate = null,
+  atMentionReplacer = null,
   image,
 }: {
   title: string,
   titleLink?: string | null,
   description?: string | null,
-  convertAtMentionTemplate?: string | null,
+  atMentionReplacer?: ((match: string, channelName: string) => string) | null,
   image: { url: string, alt: string }
 }): string {
   const h1Title = titleLink !== null
@@ -22,10 +22,10 @@ function createHtml({
   let pDescription = "";
   if (description !== null) {
     pDescription = `<p>${description}</p>`;
-    if (convertAtMentionTemplate) {
-      pDescription = pDescription.replace(
-        /@([a-zA-Z0-9_]+)/,
-        convertAtMentionTemplate,
+    if (atMentionReplacer) {
+      pDescription = pDescription.replaceAll(
+        /@([a-zA-Z0-9_]+)/g,
+        atMentionReplacer,
       );
     }
   }

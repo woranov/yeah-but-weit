@@ -88,7 +88,9 @@ function createEmoteResponseHtml(emote: BaseEmote): string {
     title: emote.code,
     titleLink: emote.infoUrl,
     description: emote.description,
-    convertAtMentionTemplate: "<a href=\"https://www.twitch.tv/$1\">@$1</a>",
+    atMentionReplacer: (
+      match, channelName,
+    ) => `<a href='https://www.twitch.tv/${channelName.toLowerCase()}'>@${channelName}</a>`,
     image: {
       url: emote.imageUrl,
       alt: emote.code,
