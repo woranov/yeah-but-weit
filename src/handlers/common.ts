@@ -115,6 +115,23 @@ const NOT_FOUND_HTML = createHtml({
   },
 });
 
+const OK_DONE_HTML = createHtml({
+  title: "DUN",
+  image: {
+    url: "https://cdn.frankerfacez.com/emote/438696/4",
+    alt: "Okayeg",
+  },
+});
+
+const UNAUTHORIZED_HTML = createHtml({
+  title: "401",
+  image: {
+    url: "https://cdn.betterttv.net/emote/5f10cdc819a5bd0524ecc8f7/3x",
+    alt: "NOIDONTTHINKSO",
+  },
+  description: "Unauthorized",
+});
+
 function notFoundHandler() {
   return new Response(NOT_FOUND_HTML, {
     status: 404,
@@ -132,5 +149,20 @@ function errorHandler(error: StatusError) {
   );
 }
 
+function okHandler() {
+  return new Response(OK_DONE_HTML, {
+    status: 200,
+    headers: { "Content-type": "text/html" },
+  });
+}
 
-export { createHtml, notFoundHandler, errorHandler };
+function unauthorizedHandler() {
+  return new Response(UNAUTHORIZED_HTML, {
+    status: 401,
+    headers: { "Content-type": "text/html" },
+  });
+}
+
+export {
+  createHtml, notFoundHandler, errorHandler, okHandler, unauthorizedHandler,
+};
