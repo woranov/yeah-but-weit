@@ -37,12 +37,15 @@ async function find(
     code: string, channel: Channel | null, provider: EmoteProviderName | null
   },
 ): Promise<BaseEmote | null> {
-  const providers: EmoteProviderName[] = provider ? [provider] : ["ttv", "bttv", "ffz"];
+  const providers: EmoteProviderName[] = provider ? [provider] : ["ttv", "ffz", "bttv"];
 
   let candidates: BaseEmote[] = [];
   for (const provider of providers) {
     const emote = await EMOTE_PROVIDERS[provider].find({ code, channel });
-    if (emote && (provider == "ttv" || emote instanceof BaseGlobalEmote)) {
+    if (emote && (
+      (provider == "ttv" || emote instanceof BaseGlobalEmote)
+      || (channel && !(emote instanceof BaseGlobalEmote))
+    )) {
       return emote;
     } else if (emote) {
       candidates.push(emote);
