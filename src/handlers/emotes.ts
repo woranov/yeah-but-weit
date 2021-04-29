@@ -3,14 +3,17 @@ import { Request } from "itty-router";
 import { checkChannelName, fetchTwitchChannelId } from "../twitch";
 import { BaseChannelEmote, BaseEmote, find } from "../emotes";
 import { createHtml, notFoundHandler } from "./common";
+import { originUrl } from "../supibot";
 
 const REDIRECT_PROPERTIES = [
-  "EMOTE_IMAGE_URL", "EMOTE_INFO_PAGE_URL", "EMOTE_TESTER_URL", "EMOTE_CREATOR_CHANNEL_URL",
+  "EMOTE_IMAGE_URL", "EMOTE_INFO_PAGE_URL", "EMOTE_TESTER_URL",
+  "EMOTE_CREATOR_CHANNEL_URL", "EMOTE_SUPIBOT_ORIGIN_URL",
 ] as const;
 type RedirectProperty = typeof REDIRECT_PROPERTIES[number];
 
 const EMOTE_ATTRIBUTE_PROPERTIES = [
   "EMOTE_CODE", "EMOTE_CREATOR", "EMOTE_DESCRIPTION", "WEIT_URL",
+  "EMOTE_SUPIBOT_ORIGIN_INFO",
 ] as const;
 type EmoteAttributeProperty = typeof EMOTE_ATTRIBUTE_PROPERTIES[number];
 
@@ -31,6 +34,9 @@ const REDIRECT_PROPERTY_ALIASES: RedirectPropertyAliasesType = {
   EMOTE_CREATOR_CHANNEL_URL: [
     "channel", "channelurl",
   ],
+  EMOTE_SUPIBOT_ORIGIN_URL: [
+    "origin", "originurl",
+  ],
 };
 
 const EMOTE_PROPERTY_ALIASES: EmotePropertyAliasesType = {
@@ -46,10 +52,15 @@ const EMOTE_PROPERTY_ALIASES: EmotePropertyAliasesType = {
   WEIT_URL: [
     "weiturl",
   ],
+  EMOTE_SUPIBOT_ORIGIN_INFO: [
+    "origininfo",
+  ],
 };
 
 
-function getProperty(request: Request, emote: BaseEmote, property: Property): string | null {
+async function getProperty({ request, emote, property }: {
+  request: Request, emote: BaseEmote, property: Property
+}): Promise<string | null> {
   switch (property) {
     case "EMOTE_CODE":
       return emote.code;
@@ -65,29 +76,54 @@ function getProperty(request: Request, emote: BaseEmote, property: Property): st
       const url = new URL(request.url);
       return url.hostname + url.pathname.replace(
         /\/[^\/]+\/?$/,
-        `/${emote.code}`
+        `/${emote.code}`,
       );
+    case "EMOTE_SUPIBOT_ORIGIN_INFO": {
+      return await emote.getOrigin()
+        ? "Supibot origin available"
+        : "No origin available";
+    }
     case "EMOTE_IMAGE_URL":
       return emote.imageUrl;
     case "EMOTE_INFO_PAGE_URL":
       return emote.infoUrl;
+    case "EMOTE_TESTER_URL":
+      return `https://emotetester.gempir.com/?emoteUrl=${encodeURIComponent(emote.imageUrl)}&resize=1`;
     case "EMOTE_CREATOR_CHANNEL_URL":
       if (emote instanceof BaseChannelEmote) {
         return `https://www.twitch.tv/${emote.creatorDisplayName.toLowerCase()}`;
       } else {
         return null;
       }
-    case "EMOTE_TESTER_URL":
-      return `https://emotetester.gempir.com/?emoteUrl=${encodeURIComponent(emote.imageUrl)}&resize=1`;
+    case "EMOTE_SUPIBOT_ORIGIN_URL": {
+      const origin = await emote.getOrigin();
+      if (origin) {
+        return originUrl(origin.ID);
+      } else {
+        return null;
+      }
+    }
   }
 }
 
 
-function createEmoteResponseHtml(emote: BaseEmote): string {
+async function createEmoteResponseHtml(emote: BaseEmote): Promise<string> {
+  const emoteOrigin = await emote.getOrigin();
+  let additionalSections = undefined;
+  let ogDescriptionExtra = undefined;
+  if (emoteOrigin) {
+    const link = originUrl(emoteOrigin.ID);
+    additionalSections = [
+      { title: "Origin", text: `Available on <a href='${link}'>supinic.com</a>` },
+    ];
+    ogDescriptionExtra = "(Supibot origin available)";
+  }
   return createHtml({
     title: emote.code,
     titleLink: emote.infoUrl,
     description: emote.description,
+    ogDescriptionExtra,
+    additionalSections,
     atMentionReplacer: (
       match, channelName,
     ) => `<a href='https://www.twitch.tv/${channelName.toLowerCase()}'>@${channelName}</a>`,
@@ -149,13 +185,13 @@ export const makeHandler = (provider: EmoteProviderName | null = null) => {
         }
         let output = "";
         for (const rawValue of getRawValues) {
-          for (const [prop, propAliases] of <[Property, string[]][]>Object.entries(
+          for (const [property, propAliases] of <[Property, string[]][]>Object.entries(
             Object.assign({}, EMOTE_PROPERTY_ALIASES, REDIRECT_PROPERTY_ALIASES),
           )) {
             if (propAliases.includes(rawValue)) {
-              const value = getProperty(request, emote, prop);
+              const value = await getProperty({ request, emote, property });
               if (value) {
-                if ((<Property[]>["WEIT_URL", "EMOTE_CODE", ...REDIRECT_PROPERTIES]).includes(prop)) {
+                if (property.endsWith("_URL") || property.endsWith("_CODE")) {
                   output += `${value} `;
                 } else {
                   output += `${value}, `;
@@ -173,9 +209,9 @@ export const makeHandler = (provider: EmoteProviderName | null = null) => {
 
       } else if (goToKey) {
         const goToValue = request.query![goToKey].toLowerCase();
-        for (const [prop, propAliases] of <[Property, string[]][]>Object.entries(REDIRECT_PROPERTY_ALIASES)) {
+        for (const [property, propAliases] of <[Property, string[]][]>Object.entries(REDIRECT_PROPERTY_ALIASES)) {
           if (propAliases.includes(goToValue)) {
-            const value = getProperty(request, emote, prop);
+            const value = await getProperty({ request, emote, property });
             if (value) {
               return Response.redirect(value, 302);
             }
@@ -184,7 +220,7 @@ export const makeHandler = (provider: EmoteProviderName | null = null) => {
         }
         return notFoundHandler();
       }
-      return new Response(createEmoteResponseHtml(emote), {
+      return new Response(await createEmoteResponseHtml(emote), {
         headers: { "Content-type": "text/html" },
       });
     } else {

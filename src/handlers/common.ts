@@ -3,18 +3,15 @@ import { DEBUG } from "../config";
 
 
 function createHtml({
-  title,
-  titleLink = null,
-  description = null,
-  atMentionReplacer = null,
-  image,
-}: {
-  title: string,
-  titleLink?: string | null,
-  description?: string | null,
-  atMentionReplacer?: ((match: string, channelName: string) => string) | null,
-  image: { url: string, alt: string }
-}): string {
+    title,
+    titleLink = null,
+    description = null,
+    ogDescriptionExtra = null,
+    additionalSections = [],
+    atMentionReplacer = null,
+    image,
+  }: HtmlCreateModel,
+): string {
   const h1Title = titleLink !== null
     ? `<h1><a href='${titleLink}'>${title}</a></h1>`
     : `<h1>${title}</h1>`;
@@ -30,9 +27,29 @@ function createHtml({
     }
   }
 
-  const ogDescription = description !== null
-    ? `<meta property='og:description' content='${description}'>`
+  let ogDescriptionText = description !== null
+    ? description
     : "";
+
+  if (ogDescriptionExtra) {
+    ogDescriptionText += ` ${ogDescriptionExtra}`;
+  }
+
+  const ogDescription = ogDescriptionText
+    ? `<meta property='og:description' content='${ogDescriptionText.trim()}'>`
+    : "";
+
+  const sections = [];
+
+  for (const additionalSection of additionalSections) {
+    const { title = null, titleLevel = 2, text } = additionalSection;
+    let sectionHtml = "";
+    if (title) {
+      sectionHtml += `<h${titleLevel}>${title}</h${titleLevel}>`;
+    }
+    sectionHtml += `<p>${text}</p>`;
+    sections.push(sectionHtml);
+  }
 
   return `
     <html lang='en'>
@@ -67,6 +84,12 @@ function createHtml({
           main {
             text-align: center;
           }
+          main p {
+            margin-bottom: calc(1rem + 5vh);
+          }
+          main p:last-child {
+            margin-bottom: 0;
+          }
           main > a {
             display: inline-block;
           }
@@ -90,6 +113,7 @@ function createHtml({
           </a>
           ${h1Title}
           ${pDescription}
+          ${sections.join("\n")}
         </main>
       </body>
     </html>

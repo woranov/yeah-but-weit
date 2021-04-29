@@ -123,3 +123,25 @@ interface Channel {
   id: number;
   name: string;
 }
+
+
+interface SupibotEmoteOriginEntry {
+  ID: string;
+  emoteID: string | null;
+  type: string;
+  author: string | null;
+  reporter: string | null;
+  text: string | null;
+  notes: string | null;
+}
+
+
+interface HtmlCreateModel {
+  title: string,
+  titleLink?: string | null,
+  description?: string | null,
+  ogDescriptionExtra?: string | null,
+  additionalSections?: { title?: string, titleLevel?: number, text: string }[],
+  atMentionReplacer?: ((match: string, channelName: string) => string) | null,
+  image: { url: string, alt: string }
+}

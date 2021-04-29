@@ -1,3 +1,6 @@
+import { find as findSupibotOrigin } from "../supibot";
+
+
 export abstract class BaseEmote {
   readonly id: number | string;
   readonly code: string;
@@ -17,6 +20,10 @@ export abstract class BaseEmote {
   abstract get imageUrl(): string;
 
   abstract get infoUrl(): string;
+
+  async getOrigin(): Promise<SupibotEmoteOriginEntry | null> {
+    return await findSupibotOrigin(this);
+  }
 }
 
 
