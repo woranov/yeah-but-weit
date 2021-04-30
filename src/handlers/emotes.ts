@@ -175,10 +175,13 @@ export const makeHandler = (provider: EmoteProviderName | null = null) => {
     }
     if (emote) {
       if (getRawKey) {
-        const getRawValues = request.query![getRawKey].toLowerCase()
-          .split(",")
-          .map(s => s.trim())
-          .filter(Boolean);
+        const getRawValues = [...new Set(
+          request.query![getRawKey]
+            .toLowerCase()
+            .split(",")
+            .map(s => s.trim())
+            .filter(Boolean)
+        )];
 
         if (getRawValues.length === 0) {
           getRawValues.push("weiturl", "description");
