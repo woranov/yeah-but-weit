@@ -208,7 +208,7 @@ async function find(
       emote = channelEmotes.find(e => e.code.toLowerCase() == code.toLowerCase()) ?? null;
     }
   }
-  if (!emote) {
+  if (!emote && !channel) {
     const result = await findCode(code);
     if (result && result.length >= 1) {
       emote = preferCaseSensitiveFind(result, code);

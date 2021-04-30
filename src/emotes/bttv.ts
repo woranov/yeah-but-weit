@@ -254,7 +254,7 @@ async function find(
       emote = preferCaseSensitiveFind(channelEmotes, code);
     }
   }
-  if (!emote) {
+  if (!emote && !channel) {
     const trendingEmotes = await listTop({});
     emote = preferCaseSensitiveFind(trendingEmotes, code);
     if (!emote) {
