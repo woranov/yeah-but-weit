@@ -1,4 +1,4 @@
-import { MEDIUM_CACHE_TTL, SUPIBOT_USER_AGENT } from "./config";
+import { MEDIUM_CACHE_TTL, SHORT_CACHE_TTL, SUPIBOT_USER_AGENT } from "./config";
 import { BaseEmote } from "./emotes";
 
 
@@ -26,6 +26,8 @@ async function listOrigins(): Promise<SupibotEmoteOriginEntry[] | null> {
     if (response && (<Response>response).ok) {
       data = (await (<Response>response).json()).data;
       await EMOTES.put(key, JSON.stringify(data), { expirationTtl: MEDIUM_CACHE_TTL });
+    } else {
+      await EMOTES.put(key, JSON.stringify([]), { expirationTtl: SHORT_CACHE_TTL });
     }
   }
 
