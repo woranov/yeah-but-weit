@@ -1,4 +1,4 @@
-import { BaseChannelEmote, BaseGlobalEmote } from "./base";
+import { BaseChannelEmote, BaseEmoteList, BaseGlobalEmote } from "./base";
 import { formatNumber, pluralize } from "../formatting";
 import { CACHE_TTL, LONG_CACHE_TTL } from "../config";
 import { preferCaseSensitiveFind } from "./common";
@@ -65,6 +65,17 @@ class ChannelEmote extends BaseChannelEmote {
 type Emote = GlobalEmote | ChannelEmote;
 
 
+class EmoteList extends BaseEmoteList<Emote> {
+  constructor({ bttvChannelId, emotes }: { bttvChannelId: string, emotes: Emote[] | null }) {
+    super({
+      provider: "bttv",
+      overviewUrl: `https://betterttv.com/users/${bttvChannelId}`,
+      emotes,
+    });
+  }
+}
+
+
 async function fetchUsageCount(emoteId: string): Promise<number> {
   const response = await fetch(
     `https://api.betterttv.net/3/emotes/${emoteId}/shared`,
@@ -97,7 +108,7 @@ async function listGlobal(): Promise<GlobalEmote[] | null> {
 }
 
 
-async function listChannel(channel: Channel): Promise<ChannelEmote[] | null> {
+async function listChannel(channel: Channel): Promise<EmoteList> {
   const key = `list:bttv:${channel.id}`;
 
   let data = <BttvEmoteListResult | null>await EMOTES.get(key, "json");
@@ -114,18 +125,21 @@ async function listChannel(channel: Channel): Promise<ChannelEmote[] | null> {
   }
 
   if (data) {
-    return [
-      ...data.sharedEmotes.map((
-        { id, code, user: { displayName: creatorDisplayName } }: BttvSharedEmoteEntry,
-      ) => {
-        return new ChannelEmote({ id, code, creatorDisplayName, isShared: true });
-      }),
-      ...data.channelEmotes.map(({ id, code }: BttvChannelEmoteEntry) => {
-        return new ChannelEmote({ id, code, creatorDisplayName: channel.name, isShared: false });
-      }),
-    ];
+    return new EmoteList({
+      bttvChannelId: data.id, emotes: [
+        ...data.sharedEmotes.map((
+          { id, code, user: { displayName: creatorDisplayName } }: BttvSharedEmoteEntry,
+        ) => {
+          return new ChannelEmote({ id, code, creatorDisplayName, isShared: true });
+        }),
+        ...data.channelEmotes.map(({ id, code }: BttvChannelEmoteEntry) => {
+          return new ChannelEmote({ id, code, creatorDisplayName: channel.name, isShared: false });
+        }),
+      ],
+    });
   } else {
-    return null;
+    return new EmoteList({ bttvChannelId: "dank", emotes: null });
+
   }
 }
 
@@ -250,8 +264,8 @@ async function find(
   }
   if (!emote && channel) {
     const channelEmotes = await listChannel(channel);
-    if (channelEmotes) {
-      emote = preferCaseSensitiveFind(channelEmotes, code);
+    if (channelEmotes.emotes) {
+      emote = preferCaseSensitiveFind(channelEmotes.emotes, code);
     }
   }
   if (!emote && !channel) {
@@ -264,4 +278,4 @@ async function find(
   return emote;
 }
 
-export { ChannelEmote, GlobalEmote, find, listTop };
+export { ChannelEmote, GlobalEmote, find, listTop, listChannel };

@@ -3,9 +3,7 @@ const CASE_SENSITIVE_EMOTE_CODE_REGEX = /^[a-z0-9]{3,}[A-Z0-9]\w*$/;
 const CASE_INSENSITIVE_EMOTE_CODE_REGEX = /^[a-zA-Z0-9]{3,}\w+$/;
 
 
-async function fetchTwitchChannelId(
-  channel: string,
-): Promise<number | null> {
+async function fetchChannel(channel: string): Promise<Channel | null> {
   try {
     const response = await fetch(
       `https://api.twitch.tv/kraken/users?login=${channel.toLowerCase()}`,
@@ -19,7 +17,12 @@ async function fetchTwitchChannelId(
     if (!response.ok) {
       return null;
     } else {
-      return (await response.json()).users[0]._id;
+      const user = (await response.json()).users[0];
+      return {
+        id: user._id,
+        name: user.display_name,
+        profileImageUrl: user.logo,
+      };
     }
   } catch (error) {
     return null;
@@ -43,4 +46,4 @@ function checkEmoteCode({ emoteCode, caseSensitive }: {
 }
 
 
-export { fetchTwitchChannelId, checkChannelName, checkEmoteCode };
+export { fetchChannel, checkChannelName, checkEmoteCode };

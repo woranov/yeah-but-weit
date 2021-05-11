@@ -1,4 +1,4 @@
-import { BaseChannelEmote, BaseGlobalEmote } from "./base";
+import { BaseChannelEmote, BaseEmoteList, BaseGlobalEmote } from "./base";
 import { CACHE_TTL } from "../config";
 import { checkEmoteCode } from "../twitch";
 import { preferCaseSensitiveFind } from "./common";
@@ -51,6 +51,17 @@ class ChannelEmote extends BaseChannelEmote {
 type Emote = GlobalEmote | ChannelEmote;
 
 
+class EmoteList extends BaseEmoteList<Emote> {
+  constructor({ channel, emotes }: { channel: Channel, emotes: Emote[] | null }) {
+    super({
+      provider: "ttv",
+      overviewUrl: `https://twitchemotes.com/channels/${channel.id}`,
+      emotes,
+    });
+  }
+}
+
+
 class TwitchEmotesApiSentIncorrect404 extends Error {
 }
 
@@ -61,7 +72,7 @@ const TWITCHEMOTES_API_PLAN_ALIASES: { [key: string]: TwitchChannelEmoteTier } =
   "$24.99": 3,
 };
 
-async function list(channel: Channel): Promise<Emote[] | null> {
+async function listChannel(channel: Channel): Promise<EmoteList> {
   const key = `list:ttv:${channel.id}`;
 
   let data = <TwitchEmoteListResult | null>await EMOTES.get(key, "json");
@@ -86,30 +97,36 @@ async function list(channel: Channel): Promise<Emote[] | null> {
 
   if (data) {
     if (channel.id === 0) {
-      return data.emotes
-        .filter(({ id }: TwitchEmoteEntry) => {
-          // ignore regex emotes like :), :D, ... for now
-          return id >= 15;
-        })
-        .map(({ id, code }: TwitchEmoteEntry) => {
-          return new GlobalEmote({ id, code });
-        });
+      return new EmoteList({
+          channel, emotes: data.emotes
+            .filter(({ id }: TwitchEmoteEntry) => {
+              // ignore regex emotes like :), :D, ... for now
+              return id >= 15;
+            })
+            .map(({ id, code }: TwitchEmoteEntry) => {
+              return new GlobalEmote({ id, code });
+            }),
+        },
+      );
     } else {
       const reversePlanLookup = Object.fromEntries(
         Object.entries(data.plans).map(([k, v]) => [v, k]),
       );
-      return data.emotes.map(({ id, code, emoticon_set }: TwitchEmoteEntry) => {
-        return new ChannelEmote({
-            id,
-            code,
-            creatorDisplayName: channel.name,
-            tier: TWITCHEMOTES_API_PLAN_ALIASES[reversePlanLookup[emoticon_set.toString()]],
-          },
-        );
+      return new EmoteList({
+        channel,
+        emotes: data.emotes.map(({ id, code, emoticon_set }: TwitchEmoteEntry) => {
+          return new ChannelEmote({
+              id,
+              code,
+              creatorDisplayName: channel.name,
+              tier: TWITCHEMOTES_API_PLAN_ALIASES[reversePlanLookup[emoticon_set.toString()]],
+            },
+          );
+        }),
       });
     }
   } else {
-    return null;
+    return new EmoteList({ channel, emotes: null });
   }
 }
 
@@ -171,9 +188,9 @@ async function find(
   try {
     if (channel) {
       // check channel emote list
-      const channelEmotes = await list(channel);
+      const channelEmotes = await listChannel(channel);
       const emote = (
-        channelEmotes && preferCaseSensitiveFind(channelEmotes, code)
+        channelEmotes.emotes && preferCaseSensitiveFind(channelEmotes.emotes, code)
       ) ?? null;
 
       if (emote) {
@@ -210,4 +227,4 @@ async function find(
 }
 
 
-export { ChannelEmote, GlobalEmote, find };
+export { ChannelEmote, GlobalEmote, EmoteList, TwitchEmotesApiSentIncorrect404, find, listChannel };

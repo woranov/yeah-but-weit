@@ -1,6 +1,6 @@
 import { Request } from "itty-router";
 import { notFoundHandler, okHandler, unauthorizedHandler } from "./common";
-import { fetchTwitchChannelId } from "../twitch";
+import { fetchChannel } from "../twitch";
 
 export async function clearCacheHandler(request: Request): Promise<Response> {
   if (request.query) {
@@ -8,14 +8,14 @@ export async function clearCacheHandler(request: Request): Promise<Response> {
     if (token && token === ADMIN_TOKEN) {
       let { channelName = null, cacheKey = null } = request.params!;
       if (channelName) {
-        const channelId = await fetchTwitchChannelId(channelName);
-        if (channelId === null) {
+        const channel = await fetchChannel(channelName);
+        if (channel === null) {
           return notFoundHandler();
         } else {
           await Promise.all([
-            `list:ttv:${channelId}`,
-            `list:bttv:${channelId}`,
-            `list:ffz:${channelId}`,
+            `list:ttv:${channel.id}`,
+            `list:bttv:${channel.id}`,
+            `list:ffz:${channel.id}`,
           ].map(key => EMOTES.delete(key)));
         }
       } else if (cacheKey) {

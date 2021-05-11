@@ -48,6 +48,7 @@ interface BttvSharedEmoteEntry extends BttvEmoteEntry {
 
 
 interface BttvEmoteListResult {
+  id: string;
   sharedEmotes: BttvSharedEmoteEntry[];
   channelEmotes: BttvChannelEmoteEntry[];
 }
@@ -122,6 +123,7 @@ interface FfzEmoteSearchResult {
 interface Channel {
   id: number;
   name: string;
+  profileImageUrl: string;
 }
 
 
@@ -133,15 +135,4 @@ interface SupibotEmoteOriginEntry {
   reporter: string | null;
   text: string | null;
   notes: string | null;
-}
-
-
-interface HtmlCreateModel {
-  title: string,
-  titleLink?: string | null,
-  description?: string | null,
-  ogDescriptionExtra?: string | null,
-  additionalSections?: { title?: string, titleLevel?: number, text: string }[],
-  atMentionReplacer?: ((match: string, channelName: string) => string) | null,
-  image: { url: string, alt: string }
 }

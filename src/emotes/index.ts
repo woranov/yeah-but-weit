@@ -62,5 +62,5 @@ async function find(
   return mostPopular;
 }
 
-export { find };
+export { EMOTE_PROVIDERS, find };
 export { BaseEmote, BaseChannelEmote } from "./base";

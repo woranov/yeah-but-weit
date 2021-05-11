@@ -1,6 +1,6 @@
 import { Router } from "itty-router";
 import { createHtml, errorHandler, notFoundHandler } from "./handlers/common";
-import { makeHandler } from "./handlers/emotes";
+import { listEmotesHandler, makeHandler } from "./handlers/emotes";
 import { listTop as listTopBttvEmotes } from "./emotes/bttv";
 import { clearCacheHandler } from "./handlers/clearCache";
 
@@ -27,7 +27,9 @@ const ffzHandler = makeHandler("ffz");
 router
   .get("/418", () => {
     return new Response(createHtml({
-      title: "418",
+      title: {
+        text: "418",
+      },
       description: "I'm a teapot",
       image: {
         url: "https://cdn.betterttv.net/emote/56f6eb647ee3e8fc6e4fe48e/3x",
@@ -41,6 +43,7 @@ router
   .get("/ttv/:code", ttvHandler)
   .get("/bttv/:code", bttvHandler)
   .get("/ffz/:code", ffzHandler)
+  .get("/list/:channelName", listEmotesHandler)
   .get("/:channelName/:code", anyProviderHandler)
   .get("/ttv/:channelName/:code", ttvHandler)
   .get("/bttv/:channelName/:code", bttvHandler)

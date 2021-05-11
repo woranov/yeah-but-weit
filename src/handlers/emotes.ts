@@ -1,9 +1,11 @@
 import { Request } from "itty-router";
 
-import { checkChannelName, fetchTwitchChannelId } from "../twitch";
-import { BaseChannelEmote, BaseEmote, find } from "../emotes";
-import { createHtml, notFoundHandler } from "./common";
+import { checkChannelName, fetchChannel } from "../twitch";
+import { BaseChannelEmote, BaseEmote, EMOTE_PROVIDERS, find } from "../emotes";
+import { addLinkToAtMentionTransformer, createHtml, notFoundHandler } from "./common";
 import { originUrl } from "../supibot";
+import { BaseEmoteList } from "../emotes/base";
+import { EmoteList as TwitchEmoteList, TwitchEmotesApiSentIncorrect404 } from "../emotes/ttv";
 
 const REDIRECT_PROPERTIES = [
   "EMOTE_IMAGE_URL", "EMOTE_INFO_PAGE_URL", "EMOTE_TESTER_URL",
@@ -109,28 +111,106 @@ async function getProperty({ request, emote, property }: {
 
 async function createEmoteResponseHtml(emote: BaseEmote): Promise<string> {
   const emoteOrigin = await emote.getOrigin();
-  let additionalSections = undefined;
-  let ogDescriptionExtra = undefined;
-  if (emoteOrigin) {
-    const link = originUrl(emoteOrigin.ID);
-    additionalSections = [
-      { title: "Origin", text: `Available on <a href='${link}'>supinic.com</a>` },
-    ];
-    ogDescriptionExtra = "(Supibot origin available)";
-  }
+
+  const extraHtml = emoteOrigin
+    ? `
+      <h2>Origin</h2>
+      <p>Available on <a href='${originUrl(emoteOrigin.ID)}'>supinic.com</a></p>
+    `
+    : "";
+
   return createHtml({
-    title: emote.code,
-    titleLink: emote.infoUrl,
+    title: {
+      text: emote.code,
+      url: emote.infoUrl,
+    },
     description: emote.description,
-    ogDescriptionExtra,
-    additionalSections,
-    atMentionReplacer: (
-      match, channelName,
-    ) => `<a href='https://www.twitch.tv/${channelName.toLowerCase()}'>@${channelName}</a>`,
     image: {
       url: emote.imageUrl,
       alt: emote.code,
     },
+    ogProperties: {
+      title: emote.code,
+      description: emote.description + (
+        emoteOrigin
+          ? " (Supibot origin available)"
+          : ""
+      ),
+      imageUrl: emote.imageUrl,
+    },
+    html: extraHtml,
+    textTransformers: [addLinkToAtMentionTransformer],
+  });
+}
+
+
+function makeEmoteListHtml(channel: Channel, emoteLists: BaseEmoteList<BaseEmote>[]): string {
+  const totalEmoteCount = emoteLists.reduce(
+    (currNum, currList) => currNum + (currList.emotes ? currList.emotes.length : 0),
+    0,
+  );
+
+  const perProviderEmoteCountString = emoteLists
+    .filter(emoteList => emoteList.emotes)
+    .map(({ provider, emotes }) => `${emotes!.length} ${provider.toUpperCase()}`)
+    .join(", ") + " Emotes";
+
+  const providerHtmlSections = emoteLists
+    .map(emoteList => {
+      const { provider, emotes, overviewUrl } = emoteList;
+      if (emotes !== null) {
+        const listItems = emotes
+          .map(emote => `
+          <li><a href='/${provider}/${channel.name.toLowerCase()}/${emote.code}' title='${emote.code} – ${emote.description}'>
+            <img src='${emote.imageUrl}' alt='${emote.code}'>
+          </a></li>
+        `).join("\n");
+
+        return `
+          <h2><a href='${overviewUrl}'>${provider.toUpperCase()} (${emotes!.length})</a></h2>
+          <ul class='provider-emote-list'>${listItems}</ul>
+        `;
+      } else {
+        return `
+          <h2><a href='${overviewUrl}'>${provider.toUpperCase()}</a></h2>
+          <em class='provider-emote-list'>unavailable</em>
+        `;
+      }
+    });
+
+  return createHtml({
+    title: {
+      text: `@${channel.name} Emote List`,
+    },
+    description: `${totalEmoteCount} Emotes`,
+    image: {
+      url: channel.profileImageUrl,
+      alt: channel.name,
+    },
+    ogProperties: {
+      title: `${channel.name} Emote List`,
+      description: perProviderEmoteCountString,
+      imageUrl: channel.profileImageUrl,
+    },
+    head: `
+      <style>
+        main {
+          padding: 3rem;
+          max-width: 60rem;
+          margin: 0 auto;
+        }
+  
+        main > a img {
+          max-width: 200px;
+        }
+  
+        main .provider-emote-list + h2 {
+          margin-top: 5rem;
+        }
+      </style>
+    `,
+    html: providerHtmlSections.join("\n"),
+    textTransformers: [addLinkToAtMentionTransformer],
   });
 }
 
@@ -145,15 +225,10 @@ export const makeHandler = (provider: EmoteProviderName | null = null) => {
         return notFoundHandler();
       }
 
-      const channelId = await fetchTwitchChannelId(channelName);
+      channel = await fetchChannel(channelName);
 
-      if (channelId === null)
+      if (!channel)
         return notFoundHandler();
-
-      channel = {
-        id: channelId,
-        name: channelName.toLowerCase(),
-      };
     }
 
     const emote = await find(
@@ -231,3 +306,39 @@ export const makeHandler = (provider: EmoteProviderName | null = null) => {
     }
   };
 };
+
+
+export async function listEmotesHandler(request: Request): Promise<Response> {
+  const channelName = request.params!.channelName;
+
+  const channel = await fetchChannel(channelName);
+
+  if (channel === null)
+    return notFoundHandler();
+
+  const emoteLists: BaseEmoteList<BaseEmote>[] = [];
+
+  for (const provider of <EmoteProviderName[]>["ttv", "ffz", "bttv"]) {
+    let providerEmoteList;
+    try {
+      providerEmoteList = await EMOTE_PROVIDERS[provider].listChannel(channel);
+    } catch (e) {
+      if (!(e instanceof TwitchEmotesApiSentIncorrect404)) {
+        throw e;
+      } else {
+        providerEmoteList = null;
+      }
+    }
+
+    if (providerEmoteList && providerEmoteList.emotes === null) {
+      providerEmoteList.emotes = [];
+    } else if (providerEmoteList === null) {
+      providerEmoteList = new TwitchEmoteList({ channel, emotes: null });
+    }
+    emoteLists.push(providerEmoteList);
+  }
+
+  return new Response(makeEmoteListHtml(channel, emoteLists), {
+    headers: { "Content-type": "text/html" },
+  });
+}

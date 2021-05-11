@@ -47,6 +47,21 @@ export abstract class BaseChannelEmote extends BaseEmote {
 }
 
 
+export abstract class BaseEmoteList<T extends BaseEmote> {
+  readonly provider: EmoteProviderName;
+  readonly overviewUrl: string;
+  emotes: T[] | null;
+
+  protected constructor({ provider, overviewUrl, emotes }: {
+    provider: EmoteProviderName, overviewUrl: string, emotes: T[] | null
+  }) {
+    this.provider = provider;
+    this.overviewUrl = overviewUrl;
+    this.emotes = emotes;
+  }
+}
+
+
 /*
 export interface ProviderModule<T extends BaseEmote> {
   find(args: { code: string, channel: Channel | null }): Promise<T | null>;

@@ -1,4 +1,4 @@
-import { BaseChannelEmote, BaseGlobalEmote } from "./base";
+import { BaseChannelEmote, BaseEmoteList, BaseGlobalEmote } from "./base";
 import { formatNumber, pluralize } from "../formatting";
 import { CACHE_TTL } from "../config";
 import { preferCaseSensitiveFind } from "./common";
@@ -69,6 +69,18 @@ class ChannelEmote extends BaseChannelEmote {
 
 type Emote = GlobalEmote | ChannelEmote;
 
+
+class EmoteList extends BaseEmoteList<Emote> {
+  constructor({ channel, emotes }: { channel: Channel, emotes: Emote[] | null }) {
+    super({
+      provider: "ffz",
+      overviewUrl: `https://www.frankerfacez.com/channel/${channel.name}`,
+      emotes,
+    });
+  }
+}
+
+
 async function listGlobal(): Promise<GlobalEmote[] | null> {
   const key = `list:ffz:global`;
 
@@ -104,7 +116,7 @@ async function listGlobal(): Promise<GlobalEmote[] | null> {
 }
 
 
-async function listChannel(channel: Channel): Promise<ChannelEmote[] | null> {
+async function listChannel(channel: Channel): Promise<EmoteList> {
   const key = `list:ffz:${channel.id}`;
 
   let data = <FfzEmoteListResult | null>await EMOTES.get(key, "json");
@@ -119,16 +131,19 @@ async function listChannel(channel: Channel): Promise<ChannelEmote[] | null> {
     }
   }
   if (data) {
-    return data.sets[data.room.set.toString()].emoticons.map(
-      ({ id, name: code, owner: { display_name }, urls, usage_count }: FfzEmoteEntry) => {
-        const maxScale = Math.max(
-          ...Object.keys(urls).map(scale => parseInt(scale)),
-        );
-        return new ChannelEmote({ id, code, creatorDisplayName: display_name, maxScale, usageCount: usage_count });
-      },
-    );
+    return new EmoteList({
+      channel,
+      emotes: data.sets[data.room.set.toString()].emoticons.map(
+        ({ id, name: code, owner: { display_name }, urls, usage_count }: FfzEmoteEntry) => {
+          const maxScale = Math.max(
+            ...Object.keys(urls).map(scale => parseInt(scale)),
+          );
+          return new ChannelEmote({ id, code, creatorDisplayName: display_name, maxScale, usageCount: usage_count });
+        },
+      ),
+    });
   } else {
-    return null;
+    return new EmoteList({ channel, emotes: null });
   }
 }
 
@@ -204,8 +219,8 @@ async function find(
   }
   if (!emote && channel) {
     const channelEmotes = await listChannel(channel);
-    if (channelEmotes) {
-      emote = channelEmotes.find(e => e.code.toLowerCase() == code.toLowerCase()) ?? null;
+    if (channelEmotes.emotes) {
+      emote = channelEmotes.emotes.find(e => e.code.toLowerCase() == code.toLowerCase()) ?? null;
     }
   }
   if (!emote && !channel) {
@@ -217,4 +232,4 @@ async function find(
   return emote;
 }
 
-export { ChannelEmote, GlobalEmote, find };
+export { ChannelEmote, GlobalEmote, find, listChannel };
