@@ -16,7 +16,7 @@ class GlobalEmote extends BaseGlobalEmote {
     return `https://www.frankerfacez.com/emoticon/${this.id}`;
   }
 
-  imageUrl(preferScale: ImageScale): string {
+  imageUrl(preferScale: ImageScale = 3): string {
     let scale: number = this.availableScales.includes(preferScale)
       ? preferScale
       : this.availableScales.sort().reverse()[0];
@@ -54,7 +54,7 @@ class ChannelEmote extends BaseChannelEmote {
     return `https://www.frankerfacez.com/emoticon/${this.id}`;
   }
 
-  imageUrl(preferScale: ImageScale): string {
+  imageUrl(preferScale: ImageScale = 3): string {
     let scale: number = this.availableScales.includes(preferScale)
       ? preferScale
       : this.availableScales.sort().reverse()[0];

@@ -20,7 +20,7 @@ class GlobalEmote extends BaseGlobalEmote {
     return `https://twitchemotes.com/emotes/${this.id}`;
   }
 
-  imageUrl(preferScale: ImageScale): string {
+  imageUrl(preferScale: ImageScale = 3): string {
     return `https://static-cdn.jtvnw.net/emoticons/v1/${this.id}/${preferScale}.0`;
   }
 }
@@ -49,7 +49,7 @@ class ChannelEmote extends BaseChannelEmote {
     return `https://twitchemotes.com/emotes/${this.id}`;
   }
 
-  imageUrl(preferScale: ImageScale): string {
+  imageUrl(preferScale: ImageScale = 3): string {
     return `https://static-cdn.jtvnw.net/emoticons/v1/${this.id}/${preferScale}.0`;
   }
 }
