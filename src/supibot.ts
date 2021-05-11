@@ -7,20 +7,24 @@ function originUrl(id: string): string {
 }
 
 
-async function listOrigins() {
+async function listOrigins(): Promise<SupibotEmoteOriginEntry[] | null> {
   const key = "list:supibot:origins";
 
   let data = <SupibotEmoteOriginEntry[] | null>await EMOTES.get(key, "json");
 
   if (!data) {
-    const response = await fetch("https://supinic.com/api/data/origin/list", {
+    const fetchPromise = fetch("https://supinic.com/api/data/origin/list", {
       headers: {
         "User-Agent": SUPIBOT_USER_AGENT,
       },
     });
+    const response = await Promise.race([
+      fetchPromise,
+      new Promise(resolve => setTimeout(resolve, 5000)),
+    ]);
 
-    if (response.ok) {
-      data = (await response.json()).data;
+    if (response && (<Response>response).ok) {
+      data = (await (<Response>response).json()).data;
       await EMOTES.put(key, JSON.stringify(data), { expirationTtl: MEDIUM_CACHE_TTL });
     }
   }
