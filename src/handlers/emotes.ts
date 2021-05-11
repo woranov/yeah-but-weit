@@ -5,7 +5,7 @@ import { BaseChannelEmote, BaseEmote, EMOTE_PROVIDERS, find } from "../emotes";
 import { addLinkToAtMentionTransformer, createHtml, notFoundHandler } from "./common";
 import { originUrl } from "../supibot";
 import { BaseEmoteList } from "../emotes/base";
-import { EmoteList as TwitchEmoteList, TwitchEmotesApiSentIncorrect404 } from "../emotes/ttv";
+import { ChannelEmote as TwitchChannelEmote, EmoteList as TwitchEmoteList, TwitchEmotesApiSentIncorrect404 } from "../emotes/ttv";
 
 const REDIRECT_PROPERTIES = [
   "EMOTE_IMAGE_URL", "EMOTE_INFO_PAGE_URL", "EMOTE_TESTER_URL",
@@ -155,20 +155,45 @@ function makeEmoteListHtml(channel: Channel, emoteLists: BaseEmoteList<BaseEmote
     .map(({ provider, emotes }) => `${emotes!.length} ${provider.toUpperCase()}`)
     .join(", ") + " Emotes";
 
+  const makeEmoteList = (provider: EmoteProviderName, emotes: BaseEmote[]) => {
+    const listItems = emotes.map(emote => `
+      <li><a href='/${provider}/${channel.name.toLowerCase()}/${emote.code}' title='${emote.code} – ${emote.description}'>
+        <img src='${emote.imageUrl(2)}' alt='${emote.code}'>
+      </a></li>
+    `).join("\n");
+
+    return `<ul class='provider-emote-list'>${listItems}</ul>`;
+  }
+
   const providerHtmlSections = emoteLists
     .map(emoteList => {
       const { provider, emotes, overviewUrl } = emoteList;
       if (emotes !== null) {
-        const listItems = emotes
-          .map(emote => `
-          <li><a href='/${provider}/${channel.name.toLowerCase()}/${emote.code}' title='${emote.code} – ${emote.description}'>
-            <img src='${emote.imageUrl}' alt='${emote.code}'>
-          </a></li>
-        `).join("\n");
+        let emoteList;
+        if (provider === "ttv") {
+          const t1Emotes = (<TwitchChannelEmote[]>emotes).filter(e => e.tier === 1);
+          const t2Emotes = (<TwitchChannelEmote[]>emotes).filter(e => e.tier === 2);
+          const t3Emotes = (<TwitchChannelEmote[]>emotes).filter(e => e.tier === 3);
+          emoteList = makeEmoteList("ttv", t1Emotes);
+          if (t2Emotes) {
+            emoteList += `
+              <h3>Tier 2</h3>
+              ${makeEmoteList("ttv", t2Emotes)}
+            `;
+          }
+          if (t3Emotes) {
+            emoteList += `
+              <h3>Tier 3</h3>
+              ${makeEmoteList("ttv", t3Emotes)}
+            `;
+          }
+        } else {
+          emoteList = makeEmoteList(provider, emotes);
+        }
 
         return `
           <h2><a href='${overviewUrl}'>${provider.toUpperCase()} (${emotes!.length})</a></h2>
-          <ul class='provider-emote-list'>${listItems}</ul>
+          ${emoteList}
         `;
       } else {
         return `
