@@ -6,14 +6,17 @@
   for (const arg of args) {
     arg.includes(':')
       ? querySegments.push(arg.replace(':', '='))
-      : pathSegments.push(arg);
+      : pathSegments.push(
+        arg.startsWith("#")
+          ? "list/" + arg.substr(1)
+          : arg
+      );
   }
+
   return (
     // base url
     ['https://e.wrnv.xyz', ...pathSegments].join('/')
     // add query string
     + (querySegments.length && '?' + querySegments.join('&') || '')
-    // append the emote as plain text
-    + (pathSegments.length && ' ' + pathSegments[pathSegments.length - 1] || '')
   );
 })();
