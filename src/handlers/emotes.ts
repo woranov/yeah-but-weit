@@ -109,15 +109,39 @@ async function getProperty({ request, emote, property }: {
 }
 
 
-async function createEmoteResponseHtml(emote: BaseEmote): Promise<string> {
+async function createEmoteResponseHtml(
+  channel: Channel | null, emote: BaseEmote,
+): Promise<string> {
   const emoteOrigin = await emote.getOrigin();
 
-  const extraHtml = emoteOrigin
-    ? `
+  const contextChannelName = channel
+    ? channel.name
+    : emote instanceof BaseChannelEmote
+        ? emote.creatorDisplayName
+        : null;
+
+  let extraHtml = "";
+  let extraHead = "";
+
+  if (emoteOrigin) {
+    extraHtml += `
       <h2>Origin</h2>
       <p>Available on <a href='${originUrl(emoteOrigin.ID)}'>supinic.com</a></p>
-    `
-    : "";
+    `;
+  }
+  if (contextChannelName) {
+    extraHtml += `
+      <a class='goto-channel-emotes-link' href='/list/${contextChannelName.toLowerCase()}'>@${contextChannelName} Emote List</a>
+    `;
+    extraHead += `
+      <style>
+        .goto-channel-emotes-link {
+          display: inline-block;
+          margin-top: 5rem;
+        }
+      </style>
+    `;
+  }
 
   return createHtml({
     title: {
@@ -138,6 +162,7 @@ async function createEmoteResponseHtml(emote: BaseEmote): Promise<string> {
       ),
       imageUrl: emote.imageUrl(),
     },
+    head: extraHead,
     html: extraHtml,
     textTransformers: [addLinkToAtMentionTransformer],
   });
@@ -323,7 +348,7 @@ export const makeHandler = (provider: EmoteProviderName | null = null) => {
         }
         return notFoundHandler();
       }
-      return new Response(await createEmoteResponseHtml(emote), {
+      return new Response(await createEmoteResponseHtml(channel, emote), {
         headers: { "Content-type": "text/html" },
       });
     } else {
