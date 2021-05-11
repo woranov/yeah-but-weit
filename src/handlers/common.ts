@@ -61,7 +61,7 @@ function createHtml({
 
   if (image) {
     mainHtmlStrings.push(`
-      <a href='${image.url}'>
+      <a href='${image.url}' class='main-img'>
         <img class='image' src='${image.url}' alt='${image.alt}'>
       </a>
     `);
@@ -113,15 +113,13 @@ function createHtml({
           main p:last-child {
             margin-bottom: 0;
           }
-          main > a {
+          main .main-img {
             display: inline-block;
+            cursor: zoom-in;
           }
           main > h1, main > p {
             display: block;
             text-align: center;
-          }
-          main > a {
-            cursor: zoom-in;
           }
           main > p a {
             text-decoration: none;
@@ -166,6 +164,7 @@ function makeServerErrorHtml(status: number, description?: string): string {
   });
 }
 
+
 const NOT_FOUND_HTML = createHtml({
   title: {
     text: "404",
@@ -197,12 +196,14 @@ const UNAUTHORIZED_HTML = createHtml({
   description: "Unauthorized",
 });
 
+
 function notFoundHandler() {
   return new Response(NOT_FOUND_HTML, {
     status: 404,
     headers: { "Content-type": "text/html" },
   });
 }
+
 
 function errorHandler(error: StatusError) {
   return new Response(
@@ -214,6 +215,7 @@ function errorHandler(error: StatusError) {
   );
 }
 
+
 function okHandler() {
   return new Response(OK_DONE_HTML, {
     status: 200,
@@ -221,12 +223,14 @@ function okHandler() {
   });
 }
 
+
 function unauthorizedHandler() {
   return new Response(UNAUTHORIZED_HTML, {
     status: 401,
     headers: { "Content-type": "text/html" },
   });
 }
+
 
 export {
   addLinkToAtMentionTransformer, createHtml, notFoundHandler, errorHandler, okHandler, unauthorizedHandler,

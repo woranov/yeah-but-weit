@@ -1,25 +1,32 @@
 import { find as findSupibotOrigin } from "../supibot";
 
 
+export type ImageScale = 1 | 2 | 3;
+export type AvailableScalesArray = [ImageScale, ...ImageScale[]];
+
+
 export abstract class BaseEmote {
   readonly id: number | string;
   readonly code: string;
+  readonly availableScales: AvailableScalesArray;
 
   constructor(
-    { id, code }: {
+    { id, code, availableScales }: {
       id: number | string,
       code: string,
+      availableScales: AvailableScalesArray,
     },
   ) {
     this.id = id;
     this.code = code;
+    this.availableScales = availableScales;
   }
 
   abstract get description(): string;
 
-  abstract get imageUrl(): string;
-
   abstract get infoUrl(): string;
+
+  abstract imageUrl(preferScale?: ImageScale): string;
 
   async getOrigin(): Promise<SupibotEmoteOriginEntry | null> {
     return await findSupibotOrigin(this);
@@ -38,6 +45,7 @@ export abstract class BaseChannelEmote extends BaseEmote {
     { creatorDisplayName, ...rest }: {
       id: number | string,
       code: string,
+      availableScales: AvailableScalesArray,
       creatorDisplayName: string,
     },
   ) {

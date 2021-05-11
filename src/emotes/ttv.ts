@@ -1,20 +1,27 @@
-import { BaseChannelEmote, BaseEmoteList, BaseGlobalEmote } from "./base";
+import { BaseChannelEmote, BaseEmoteList, BaseGlobalEmote, ImageScale } from "./base";
 import { CACHE_TTL } from "../config";
 import { checkEmoteCode } from "../twitch";
 import { preferCaseSensitiveFind } from "./common";
 
 
 class GlobalEmote extends BaseGlobalEmote {
+  constructor({ ...args }: {
+    id: number | string,
+    code: string,
+  }) {
+    super({ ...args, availableScales: [1, 2, 3] });
+  }
+
   get description(): string {
     return "Global Twitch Emote";
   }
 
-  get imageUrl(): string {
-    return `https://static-cdn.jtvnw.net/emoticons/v1/${this.id}/3.0`;
-  }
-
   get infoUrl(): string {
     return `https://twitchemotes.com/emotes/${this.id}`;
+  }
+
+  imageUrl(preferScale: ImageScale): string {
+    return `https://static-cdn.jtvnw.net/emoticons/v1/${this.id}/${preferScale}.0`;
   }
 }
 
@@ -30,7 +37,7 @@ class ChannelEmote extends BaseChannelEmote {
       tier: TwitchChannelEmoteTier,
     },
   ) {
-    super(rest);
+    super({ availableScales: [1, 2, 3], ...rest });
     this.tier = tier;
   }
 
@@ -38,12 +45,12 @@ class ChannelEmote extends BaseChannelEmote {
     return `Tier ${this.tier} @${this.creatorDisplayName} Emote`;
   }
 
-  get imageUrl(): string {
-    return `https://static-cdn.jtvnw.net/emoticons/v1/${this.id}/3.0`;
-  }
-
   get infoUrl(): string {
     return `https://twitchemotes.com/emotes/${this.id}`;
+  }
+
+  imageUrl(preferScale: ImageScale): string {
+    return `https://static-cdn.jtvnw.net/emoticons/v1/${this.id}/${preferScale}.0`;
   }
 }
 

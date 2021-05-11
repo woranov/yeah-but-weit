@@ -1,4 +1,4 @@
-import { BaseChannelEmote, BaseEmoteList, BaseGlobalEmote } from "./base";
+import { AvailableScalesArray, BaseChannelEmote, BaseEmoteList, BaseGlobalEmote, ImageScale } from "./base";
 import { formatNumber, pluralize } from "../formatting";
 import { CACHE_TTL } from "../config";
 import { preferCaseSensitiveFind } from "./common";
@@ -8,61 +8,62 @@ const EMOTE_CODE_REGEX = /^(!|\w){3,}$/;
 
 
 class GlobalEmote extends BaseGlobalEmote {
-  readonly #maxScale: number;
-
-  constructor(
-    { maxScale, ...rest }: {
-      id: number,
-      code: string,
-      maxScale: number,
-    },
-  ) {
-    super(rest);
-    this.#maxScale = maxScale;
-  }
-
   get description(): string {
     return "Global FFZ Emote";
   }
 
-  get imageUrl(): string {
-    return `https://cdn.frankerfacez.com/emote/${this.id}/${this.#maxScale}`;
-  }
-
   get infoUrl(): string {
     return `https://www.frankerfacez.com/emoticon/${this.id}`;
+  }
+
+  imageUrl(preferScale: ImageScale): string {
+    let scale: number = this.availableScales.includes(preferScale)
+      ? preferScale
+      : this.availableScales.sort().reverse()[0];
+
+    if (scale === 3) {
+      scale = 4;
+    }
+
+    return `https://cdn.frankerfacez.com/emote/${this.id}/${scale}`;
   }
 }
 
 
 class ChannelEmote extends BaseChannelEmote {
   readonly usageCount: number;
-  readonly #maxScale: number;
 
   constructor(
-    { usageCount, maxScale, ...rest }: {
+    { usageCount, ...rest }: {
       id: number,
       code: string,
+      availableScales: AvailableScalesArray,
       creatorDisplayName: string,
       usageCount: number,
-      maxScale: number,
     },
   ) {
     super(rest);
     this.usageCount = usageCount;
-    this.#maxScale = maxScale;
   }
 
   get description(): string {
     return `FFZ Emote, by @${this.creatorDisplayName}, available in ${formatNumber(this.usageCount)} ${pluralize("channel", this.usageCount)}`;
   }
 
-  get imageUrl(): string {
-    return `https://cdn.frankerfacez.com/emote/${this.id}/${this.#maxScale}`;
-  }
-
   get infoUrl(): string {
     return `https://www.frankerfacez.com/emoticon/${this.id}`;
+  }
+
+  imageUrl(preferScale: ImageScale): string {
+    let scale: number = this.availableScales.includes(preferScale)
+      ? preferScale
+      : this.availableScales.sort().reverse()[0];
+
+    if (scale === 3) {
+      scale = 4;
+    }
+
+    return `https://cdn.frankerfacez.com/emote/${this.id}/${scale}`;
   }
 }
 
@@ -100,11 +101,15 @@ async function listGlobal(): Promise<GlobalEmote[] | null> {
     for (const setId of [...data.default_sets, ...Object.keys(data.users)]) {
       data.sets[setId.toString()].emoticons.map(
         ({ id, name: code, urls }: FfzEmoteEntry) => {
-          const maxScale = Math.max(
-            ...Object.keys(urls).map(scale => parseInt(scale)),
+          const availableScales = <AvailableScalesArray>(
+              [...Object.keys(urls)].map(scale => {
+                const scaleNum = parseInt(scale);
+                return scaleNum === 4 ? 3 : scaleNum;
+              })
           );
+
           globalEmotes.push(
-            new GlobalEmote({ id, code, maxScale }),
+            new GlobalEmote({ id, code, availableScales }),
           );
         },
       );
@@ -135,10 +140,15 @@ async function listChannel(channel: Channel): Promise<EmoteList> {
       channel,
       emotes: data.sets[data.room.set.toString()].emoticons.map(
         ({ id, name: code, owner: { display_name }, urls, usage_count }: FfzEmoteEntry) => {
-          const maxScale = Math.max(
-            ...Object.keys(urls).map(scale => parseInt(scale)),
+          const availableScales = <AvailableScalesArray>(
+            [...Object.keys(urls)].map(scale => {
+              const scaleNum = parseInt(scale);
+              return scaleNum === 4 ? 3 : scaleNum;
+            })
           );
-          return new ChannelEmote({ id, code, creatorDisplayName: display_name, maxScale, usageCount: usage_count });
+          return new ChannelEmote({
+            id, code, availableScales, creatorDisplayName: display_name, usageCount: usage_count
+          });
         },
       ),
     });
@@ -186,10 +196,15 @@ async function findCode(code: string): Promise<ChannelEmote[] | null> {
     const withMatchingCode = data
       .filter(({ name: searchEntryEmoteCode }: FfzEmoteEntry) => searchEntryEmoteCode.toLowerCase() === code.toLowerCase())
       .map(({ id, name: code, owner: { display_name }, urls, usage_count }: FfzEmoteEntry) => {
-        const maxScale = Math.max(
-          ...Object.keys(urls).map(scale => parseInt(scale)),
+        const availableScales = <AvailableScalesArray>(
+          [...Object.keys(urls)].map(scale => {
+            const scaleNum = parseInt(scale);
+            return scaleNum === 4 ? 3 : scaleNum;
+          })
         );
-        return new ChannelEmote({ id, code, creatorDisplayName: display_name, maxScale, usageCount: usage_count });
+        return new ChannelEmote({
+          id, code, availableScales, creatorDisplayName: display_name, usageCount: usage_count
+        });
       });
     if (withMatchingCode.length >= 1) {
       return withMatchingCode;

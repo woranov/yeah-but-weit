@@ -1,4 +1,4 @@
-import { BaseChannelEmote, BaseEmoteList, BaseGlobalEmote } from "./base";
+import { BaseChannelEmote, BaseEmoteList, BaseGlobalEmote, ImageScale } from "./base";
 import { formatNumber, pluralize } from "../formatting";
 import { CACHE_TTL, LONG_CACHE_TTL } from "../config";
 import { preferCaseSensitiveFind } from "./common";
@@ -8,16 +8,23 @@ const EMOTE_CODE_REGEX = /^(\w{3,}|:\w+:)$/;
 
 
 class GlobalEmote extends BaseGlobalEmote {
+  constructor({ ...args }: {
+    id: number | string,
+    code: string,
+  }) {
+    super({ ...args, availableScales: [1, 2, 3] });
+  }
+
   get description(): string {
     return "Global BTTV Emote";
   }
 
-  get imageUrl(): string {
-    return `https://cdn.betterttv.net/emote/${this.id}/3x`;
-  }
-
   get infoUrl(): string {
     return `https://betterttv.com/emotes/${this.id}`;
+  }
+
+  imageUrl(preferScale: ImageScale = 3): string {
+    return `https://cdn.betterttv.net/emote/${this.id}/${preferScale}x`;
   }
 }
 
@@ -35,7 +42,7 @@ class ChannelEmote extends BaseChannelEmote {
       isShared?: boolean | null,
     },
   ) {
-    super(rest);
+    super({ availableScales: [1, 2, 3], ...rest });
     this.usageCount = usageCount;
     this.#isShared = isShared;
   }
@@ -52,12 +59,12 @@ class ChannelEmote extends BaseChannelEmote {
     return description;
   }
 
-  get imageUrl(): string {
-    return `https://cdn.betterttv.net/emote/${this.id}/3x`;
-  }
-
   get infoUrl(): string {
     return `https://betterttv.com/emotes/${this.id}`;
+  }
+
+  imageUrl(preferScale: ImageScale = 3): string {
+    return `https://cdn.betterttv.net/emote/${this.id}/${preferScale}x`;
   }
 }
 
@@ -130,16 +137,19 @@ async function listChannel(channel: Channel): Promise<EmoteList> {
         ...data.sharedEmotes.map((
           { id, code, user: { displayName: creatorDisplayName } }: BttvSharedEmoteEntry,
         ) => {
-          return new ChannelEmote({ id, code, creatorDisplayName, isShared: true });
+          return new ChannelEmote({
+            id, code, creatorDisplayName, isShared: true
+          });
         }),
         ...data.channelEmotes.map(({ id, code }: BttvChannelEmoteEntry) => {
-          return new ChannelEmote({ id, code, creatorDisplayName: channel.name, isShared: false });
+          return new ChannelEmote({
+            id, code, creatorDisplayName: channel.name, isShared: false
+          });
         }),
       ],
     });
   } else {
     return new EmoteList({ bttvChannelId: "dank", emotes: null });
-
   }
 }
 
@@ -236,10 +246,7 @@ async function findCode(code: string, considerOldestN: number = 5): Promise<Chan
     if (bestResult) {
       const { entry, usageCount } = bestResult;
       return new ChannelEmote({
-        id: entry.id,
-        code: entry.code,
-        creatorDisplayName: entry.user.displayName,
-        usageCount: usageCount + 1,
+        id: entry.id, code: entry.code, creatorDisplayName: entry.user.displayName, usageCount: usageCount + 1,
       });
     }
   }

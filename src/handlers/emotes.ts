@@ -86,11 +86,11 @@ async function getProperty({ request, emote, property }: {
         : "No origin available";
     }
     case "EMOTE_IMAGE_URL":
-      return emote.imageUrl;
+      return emote.imageUrl();
     case "EMOTE_INFO_PAGE_URL":
       return emote.infoUrl;
     case "EMOTE_TESTER_URL":
-      return `https://emotetester.gempir.com/?emoteUrl=${encodeURIComponent(emote.imageUrl)}&resize=1`;
+      return `https://emotetester.gempir.com/?emoteUrl=${encodeURIComponent(emote.imageUrl(1))}&resize=0`;
     case "EMOTE_CREATOR_CHANNEL_URL":
       if (emote instanceof BaseChannelEmote) {
         return `https://www.twitch.tv/${emote.creatorDisplayName.toLowerCase()}`;
@@ -126,7 +126,7 @@ async function createEmoteResponseHtml(emote: BaseEmote): Promise<string> {
     },
     description: emote.description,
     image: {
-      url: emote.imageUrl,
+      url: emote.imageUrl(),
       alt: emote.code,
     },
     ogProperties: {
@@ -136,7 +136,7 @@ async function createEmoteResponseHtml(emote: BaseEmote): Promise<string> {
           ? " (Supibot origin available)"
           : ""
       ),
-      imageUrl: emote.imageUrl,
+      imageUrl: emote.imageUrl(),
     },
     html: extraHtml,
     textTransformers: [addLinkToAtMentionTransformer],
