@@ -200,13 +200,13 @@ function makeEmoteListHtml(channel: Channel, emoteLists: BaseEmoteList<BaseEmote
           const t2Emotes = (<TwitchChannelEmote[]>emotes).filter(e => e.tier === 2);
           const t3Emotes = (<TwitchChannelEmote[]>emotes).filter(e => e.tier === 3);
           emoteList = makeEmoteList("ttv", t1Emotes);
-          if (t2Emotes) {
+          if (t2Emotes.length) {
             emoteList += `
               <h3>Tier 2</h3>
               ${makeEmoteList("ttv", t2Emotes)}
             `;
           }
-          if (t3Emotes) {
+          if (t3Emotes.length) {
             emoteList += `
               <h3>Tier 3</h3>
               ${makeEmoteList("ttv", t3Emotes)}
