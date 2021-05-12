@@ -39,18 +39,18 @@ export abstract class BaseGlobalEmote extends BaseEmote {
 
 
 export abstract class BaseChannelEmote extends BaseEmote {
-  readonly creatorDisplayName: string;
+  readonly creator: Channel;
 
   protected constructor(
-    { creatorDisplayName, ...rest }: {
+    { creator, ...rest }: {
       id: number | string,
       code: string,
       availableScales: AvailableScalesArray,
-      creatorDisplayName: string,
+      creator: Channel,
     },
   ) {
     super(rest);
-    this.creatorDisplayName = creatorDisplayName;
+    this.creator = creator;
   }
 }
 

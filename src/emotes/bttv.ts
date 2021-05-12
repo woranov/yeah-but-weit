@@ -37,7 +37,7 @@ class ChannelEmote extends BaseChannelEmote {
     { usageCount = null, isShared = null, ...rest }: {
       id: string,
       code: string,
-      creatorDisplayName: string,
+      creator: ChannelWithId,
       usageCount?: number | null,
       isShared?: boolean | null,
     },
@@ -52,7 +52,7 @@ class ChannelEmote extends BaseChannelEmote {
     if (this.isShared !== null) {
       description = `${this.isShared ? "Shared" : "Channel"} ${description}`;
     }
-    description += `, by @${this.creatorDisplayName}`;
+    description += `, by @${this.creator.name}`;
     if (this.usageCount !== null) {
       description += `, available in ${formatNumber(this.usageCount)} ${pluralize("channel", this.usageCount)}`;
     }
@@ -115,7 +115,7 @@ async function listGlobal(): Promise<GlobalEmote[] | null> {
 }
 
 
-async function listChannel(channel: Channel): Promise<EmoteList> {
+async function listChannel(channel: ChannelWithId): Promise<EmoteList> {
   const key = `list:bttv:${channel.id}`;
 
   let data = <BttvEmoteListResult | null>await EMOTES.get(key, "json");
@@ -135,15 +135,22 @@ async function listChannel(channel: Channel): Promise<EmoteList> {
     return new EmoteList({
       bttvChannelId: data.id, emotes: [
         ...data.sharedEmotes.map((
-          { id, code, user: { displayName: creatorDisplayName } }: BttvSharedEmoteEntry,
+          {
+            id,
+            code,
+            user: { providerId: creatorId, name: creatorName, displayName: creatorDisplayName },
+          }: BttvSharedEmoteEntry,
         ) => {
           return new ChannelEmote({
-            id, code, creatorDisplayName, isShared: true
+            id,
+            code,
+            creator: { id: parseInt(creatorId), name: creatorName, displayName: creatorDisplayName },
+            isShared: true,
           });
         }),
         ...data.channelEmotes.map(({ id, code }: BttvChannelEmoteEntry) => {
           return new ChannelEmote({
-            id, code, creatorDisplayName: channel.name, isShared: false
+            id, code, creator: channel, isShared: false,
           });
         }),
       ],
@@ -189,7 +196,11 @@ async function listTop({ count = 4_500, force = false }: {
   }
 
   return emoteData.map(e => new ChannelEmote({
-    id: e.emote.id, code: e.emote.code, creatorDisplayName: e.emote.user.displayName, usageCount: e.total + 1,
+    id: e.emote.id, code: e.emote.code, creator: {
+      id: parseInt(e.emote.user.providerId),
+      name: e.emote.user.name,
+      displayName: e.emote.user.displayName,
+    }, usageCount: e.total + 1,
   }));
 }
 
@@ -246,7 +257,11 @@ async function findCode(code: string, considerOldestN: number = 5): Promise<Chan
     if (bestResult) {
       const { entry, usageCount } = bestResult;
       return new ChannelEmote({
-        id: entry.id, code: entry.code, creatorDisplayName: entry.user.displayName, usageCount: usageCount + 1,
+        id: entry.id, code: entry.code, creator: {
+          id: parseInt(entry.user.providerId),
+          name: entry.user.name,
+          displayName: entry.user.displayName,
+        }, usageCount: usageCount + 1,
       });
     }
   }
@@ -256,7 +271,7 @@ async function findCode(code: string, considerOldestN: number = 5): Promise<Chan
 
 // noinspection JSUnusedGlobalSymbols, DuplicatedCode
 async function find(
-  { code, channel = null }: { code: string, channel: Channel | null },
+  { code, channel = null }: { code: string, channel: ChannelWithId | null },
 ): Promise<Emote | null> {
   if (!EMOTE_CODE_REGEX.test(code)) {
     return null;

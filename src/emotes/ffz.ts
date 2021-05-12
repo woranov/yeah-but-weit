@@ -38,7 +38,7 @@ class ChannelEmote extends BaseChannelEmote {
       id: number,
       code: string,
       availableScales: AvailableScalesArray,
-      creatorDisplayName: string,
+      creator: Channel,
       usageCount: number,
     },
   ) {
@@ -47,7 +47,7 @@ class ChannelEmote extends BaseChannelEmote {
   }
 
   get description(): string {
-    return `FFZ Emote, by @${this.creatorDisplayName}, available in ${formatNumber(this.usageCount)} ${pluralize("channel", this.usageCount)}`;
+    return `FFZ Emote, by @${this.creator.name}, available in ${formatNumber(this.usageCount)} ${pluralize("channel", this.usageCount)}`;
   }
 
   get infoUrl(): string {
@@ -121,7 +121,7 @@ async function listGlobal(): Promise<GlobalEmote[] | null> {
 }
 
 
-async function listChannel(channel: Channel): Promise<EmoteList> {
+async function listChannel(channel: ChannelWithId): Promise<EmoteList> {
   const key = `list:ffz:${channel.id}`;
 
   let data = <FfzEmoteListResult | null>await EMOTES.get(key, "json");
@@ -139,7 +139,7 @@ async function listChannel(channel: Channel): Promise<EmoteList> {
     return new EmoteList({
       channel,
       emotes: data.sets[data.room.set.toString()].emoticons.map(
-        ({ id, name: code, owner: { display_name }, urls, usage_count }: FfzEmoteEntry) => {
+        ({ id, name: code, owner: { name, display_name }, urls, usage_count }: FfzEmoteEntry) => {
           const availableScales = <AvailableScalesArray>(
             [...Object.keys(urls)].map(scale => {
               const scaleNum = parseInt(scale);
@@ -147,7 +147,7 @@ async function listChannel(channel: Channel): Promise<EmoteList> {
             })
           );
           return new ChannelEmote({
-            id, code, availableScales, creatorDisplayName: display_name, usageCount: usage_count
+            id, code, availableScales, creator: { name, displayName: display_name }, usageCount: usage_count,
           });
         },
       ),
@@ -195,7 +195,7 @@ async function findCode(code: string): Promise<ChannelEmote[] | null> {
   if (data) {
     const withMatchingCode = data
       .filter(({ name: searchEntryEmoteCode }: FfzEmoteEntry) => searchEntryEmoteCode.toLowerCase() === code.toLowerCase())
-      .map(({ id, name: code, owner: { display_name }, urls, usage_count }: FfzEmoteEntry) => {
+      .map(({ id, name: code, owner: { name, display_name }, urls, usage_count }: FfzEmoteEntry) => {
         const availableScales = <AvailableScalesArray>(
           [...Object.keys(urls)].map(scale => {
             const scaleNum = parseInt(scale);
@@ -203,7 +203,7 @@ async function findCode(code: string): Promise<ChannelEmote[] | null> {
           })
         );
         return new ChannelEmote({
-          id, code, availableScales, creatorDisplayName: display_name, usageCount: usage_count
+          id, code, availableScales, creator: { name, displayName: display_name }, usageCount: usage_count,
         });
       });
     if (withMatchingCode.length >= 1) {
@@ -219,7 +219,7 @@ async function findCode(code: string): Promise<ChannelEmote[] | null> {
 
 // noinspection JSUnusedGlobalSymbols, DuplicatedCode
 async function find(
-  { code, channel = null }: { code: string, channel: Channel | null },
+  { code, channel = null }: { code: string, channel: ChannelWithId | null },
 ): Promise<Emote | null> {
   if (!EMOTE_CODE_REGEX.test(code)) {
     return null;

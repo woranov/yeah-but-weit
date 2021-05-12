@@ -76,7 +76,7 @@ async function getProperty({ request, emote, property }: {
       return emote.description;
     case "EMOTE_CREATOR":
       if (emote instanceof BaseChannelEmote) {
-        return `@${emote.creatorDisplayName}`;
+        return `@${emote.creator.name}`;
       } else {
         return null;
       }
@@ -99,7 +99,7 @@ async function getProperty({ request, emote, property }: {
       return `https://emotetester.gempir.com/?emoteUrl=${encodeURIComponent(emote.imageUrl(1))}&resize=0`;
     case "EMOTE_CREATOR_CHANNEL_URL":
       if (emote instanceof BaseChannelEmote) {
-        return `https://www.twitch.tv/${emote.creatorDisplayName.toLowerCase()}`;
+        return `https://www.twitch.tv/${emote.creator.name}`;
       } else {
         return null;
       }
@@ -175,7 +175,7 @@ async function createEmoteResponseHtml(
 }
 
 
-function makeEmoteListHtml(channel: Channel, emoteLists: BaseEmoteList<BaseEmote>[]): string {
+function makeEmoteListHtml(channel: ChannelWithProfilePicture, emoteLists: BaseEmoteList<BaseEmote>[]): string {
   const totalEmoteCount = emoteLists.reduce(
     (currNum, currList) => currNum + (currList.emotes ? currList.emotes.length : 0),
     0,
@@ -286,7 +286,7 @@ function makeEmoteListHtml(channel: Channel, emoteLists: BaseEmoteList<BaseEmote
 export const makeHandler = (provider: EmoteProviderName | null = null) => {
   return async (request: Request) => {
     let { channelName = null, code } = request.params!;
-    let channel: Channel | null = null;
+    let channel: ChannelWithProfilePicture | null = null;
 
     if (channelName) {
       if (!checkChannelName(channelName)) {

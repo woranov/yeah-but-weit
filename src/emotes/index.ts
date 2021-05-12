@@ -34,7 +34,7 @@ function mostPopularCandidate(candidates: BaseEmote[]): BaseEmote | null {
 
 async function find(
   { code, channel = null, provider = null }: {
-    code: string, channel: Channel | null, provider: EmoteProviderName | null
+    code: string, channel: ChannelWithId | null, provider: EmoteProviderName | null
   },
 ): Promise<BaseEmote | null> {
   const providers: EmoteProviderName[] = provider ? [provider] : ["ttv", "ffz", "bttv"];

@@ -33,7 +33,7 @@ class ChannelEmote extends BaseChannelEmote {
     { tier, ...rest }: {
       id: number,
       code: string,
-      creatorDisplayName: string,
+      creator: ChannelWithId,
       tier: TwitchChannelEmoteTier,
     },
   ) {
@@ -42,7 +42,7 @@ class ChannelEmote extends BaseChannelEmote {
   }
 
   get description(): string {
-    return `Tier ${this.tier} @${this.creatorDisplayName} Emote`;
+    return `Tier ${this.tier} @${this.creator.name} Emote`;
   }
 
   get infoUrl(): string {
@@ -59,7 +59,7 @@ type Emote = GlobalEmote | ChannelEmote;
 
 
 class EmoteList extends BaseEmoteList<Emote> {
-  constructor({ channel, emotes }: { channel: Channel, emotes: Emote[] | null }) {
+  constructor({ channel, emotes }: { channel: ChannelWithId, emotes: Emote[] | null }) {
     super({
       provider: "ttv",
       overviewUrl: `https://twitchemotes.com/channels/${channel.id}`,
@@ -79,7 +79,7 @@ const TWITCHEMOTES_API_PLAN_ALIASES: { [key: string]: TwitchChannelEmoteTier } =
   "$24.99": 3,
 };
 
-async function listChannel(channel: Channel): Promise<EmoteList> {
+async function listChannel(channel: ChannelWithId): Promise<EmoteList> {
   const key = `list:ttv:${channel.id}`;
 
   let data = <TwitchEmoteListResult | null>await EMOTES.get(key, "json");
@@ -125,7 +125,7 @@ async function listChannel(channel: Channel): Promise<EmoteList> {
           return new ChannelEmote({
               id,
               code,
-              creatorDisplayName: channel.name,
+              creator: channel,
               tier: TWITCHEMOTES_API_PLAN_ALIASES[reversePlanLookup[emoticon_set.toString()]],
             },
           );
@@ -140,6 +140,7 @@ async function listChannel(channel: Channel): Promise<EmoteList> {
 
 const DOES_NOT_EXIST_SENTINEL_EMOTE_ID = "-1";
 const DOES_NOT_EXIST_SENTINEL: TwitchEmoteLookupResult = {
+  channelid: null,
   channel: null,
   channellogin: null,
   emoteid: DOES_NOT_EXIST_SENTINEL_EMOTE_ID,
@@ -175,7 +176,11 @@ async function findCode(code: string): Promise<Emote | null> {
       return new ChannelEmote({
         id: parseInt(data.emoteid),
         code: data.emotecode,
-        creatorDisplayName: data.channel!,
+        creator: {
+          id: parseInt(data.channelid!),
+          name: data.channellogin!,
+          displayName: data.channel!,
+        },
         tier: <TwitchChannelEmoteTier>parseInt(data.tier),
       });
     }
@@ -186,7 +191,7 @@ async function findCode(code: string): Promise<Emote | null> {
 
 
 async function find(
-  { code, channel = null }: { code: string, channel: Channel | null },
+  { code, channel = null }: { code: string, channel: ChannelWithId | null },
 ): Promise<Emote | null> {
   if (!checkEmoteCode({ emoteCode: code, caseSensitive: false })) {
     return null;
@@ -223,7 +228,7 @@ async function find(
         // must match channel
         if (
           emote instanceof ChannelEmote
-          && emote.creatorDisplayName.toLowerCase() === channel.name
+          && emote.creator.name === channel.name
         ) {
           return emote;
         }

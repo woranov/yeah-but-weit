@@ -18,6 +18,7 @@ interface TwitchEmoteListResult {
 
 
 interface TwitchEmoteLookupResult {
+  channelid: string | null;
   channel: string | null;
   channellogin: string | null;
   emoteid: string;
@@ -59,7 +60,9 @@ interface BttvTrendingEmoteListEntry {
     id: string;
     code: string;
     user: {
+      name: string;
       displayName: string;
+      providerId: string;
     };
   };
   total: number;
@@ -70,7 +73,9 @@ interface BttvEmoteSearchResultEntry {
   id: string;
   code: string;
   user: {
+    name: string;
     displayName: string;
+    providerId: string;
   };
 }
 
@@ -121,8 +126,17 @@ interface FfzEmoteSearchResult {
 
 
 interface Channel {
-  id: number;
   name: string;
+  displayName: string;
+}
+
+
+interface ChannelWithId extends Channel {
+  id: number;
+}
+
+
+interface ChannelWithProfilePicture extends ChannelWithId {
   profileImageUrl: string;
 }
 
