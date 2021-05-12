@@ -149,6 +149,7 @@ async function createEmoteResponseHtml(
       <li><a href='/list/${name}'>@${name} Emote List</a></li>
     `).join("\n");
     extraHtml += `
+      <span style="display: inline-block;"></span>
       <ul class='goto-channel-emotes-links'>
         ${links}
       </ul>
