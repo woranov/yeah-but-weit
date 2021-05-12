@@ -120,12 +120,6 @@ async function createEmoteResponseHtml(
 ): Promise<string> {
   const emoteOrigin = await emote.getOrigin();
 
-  const contextChannelName = channel
-    ? channel.name
-    : emote instanceof BaseChannelEmote
-        ? emote.creatorDisplayName
-        : null;
-
   let extraHtml = "";
   let extraHead = "";
 
@@ -135,17 +129,29 @@ async function createEmoteResponseHtml(
       <p>Available on <a href='${originUrl(emoteOrigin.ID)}'>supinic.com</a></p>
     `;
   }
-  if (contextChannelName) {
-    extraHtml += `
-      <a class='goto-channel-emotes-link' href='/list/${contextChannelName.toLowerCase()}'>@${contextChannelName} Emote List</a>
-    `;
+
+  const contextChannelNames = <string[]>[
+    ...new Set([
+      channel ? channel.name : null,
+      emote instanceof BaseChannelEmote ? emote.creator.name : null,
+    ].filter(Boolean)),
+  ];
+
+  if (contextChannelNames.length) {
     extraHead += `
       <style>
-        .goto-channel-emotes-link {
-          display: inline-block;
-          margin-top: 5rem;
+        .goto-channel-emotes-links {
+          margin-top: 5rem;        
         }
       </style>
+    `;
+    const links = contextChannelNames.map(name => `
+      <li><a href='/list/${name}'>@${name} Emote List</a></li>
+    `).join("\n");
+    extraHtml += `
+      <ul class='goto-channel-emotes-links'>
+        ${links}
+      </ul>
     `;
   }
 

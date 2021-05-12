@@ -128,12 +128,12 @@ function createHtml({
             padding: 0;
             list-style-type: none;
           }
-          main ul li {
+          main ul.provider-emote-list li {
             display: inline-block;
             padding: 0.1rem;
             max-width: 4rem;
           }
-          main ul li img {
+          main ul.provider-emote-list li img {
             max-width: 100%;
           }
         </style>
