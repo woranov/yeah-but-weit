@@ -31,7 +31,7 @@ class GlobalEmote extends BaseGlobalEmote {
 
 class ChannelEmote extends BaseChannelEmote {
   readonly usageCount: number | null;
-  readonly #isShared: boolean | null;
+  readonly isShared: boolean | null;
 
   constructor(
     { usageCount = null, isShared = null, ...rest }: {
@@ -44,13 +44,13 @@ class ChannelEmote extends BaseChannelEmote {
   ) {
     super({ availableScales: [1, 2, 3], ...rest });
     this.usageCount = usageCount;
-    this.#isShared = isShared;
+    this.isShared = isShared;
   }
 
   get description(): string {
     let description = "BTTV Emote";
-    if (this.#isShared !== null) {
-      description = `${this.#isShared ? "Shared" : "Channel"} ${description}`;
+    if (this.isShared !== null) {
+      description = `${this.isShared ? "Shared" : "Channel"} ${description}`;
     }
     description += `, by @${this.creatorDisplayName}`;
     if (this.usageCount !== null) {

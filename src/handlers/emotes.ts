@@ -5,7 +5,13 @@ import { BaseChannelEmote, BaseEmote, EMOTE_PROVIDERS, find } from "../emotes";
 import { addLinkToAtMentionTransformer, createHtml, notFoundHandler } from "./common";
 import { originUrl } from "../supibot";
 import { BaseEmoteList } from "../emotes/base";
-import { ChannelEmote as TwitchChannelEmote, EmoteList as TwitchEmoteList, TwitchEmotesApiSentIncorrect404 } from "../emotes/ttv";
+import {
+  ChannelEmote as TwitchChannelEmote,
+  EmoteList as TwitchEmoteList,
+  TwitchEmotesApiSentIncorrect404,
+} from "../emotes/ttv";
+import { ChannelEmote as BttvChannelEmote } from "../emotes/bttv";
+
 
 const REDIRECT_PROPERTIES = [
   "EMOTE_IMAGE_URL", "EMOTE_INFO_PAGE_URL", "EMOTE_TESTER_URL",
@@ -194,12 +200,12 @@ function makeEmoteListHtml(channel: Channel, emoteLists: BaseEmoteList<BaseEmote
     .map(emoteList => {
       const { provider, emotes, overviewUrl } = emoteList;
       if (emotes !== null) {
-        let emoteList;
+        let emoteList = "";
         if (provider === "ttv") {
           const t1Emotes = (<TwitchChannelEmote[]>emotes).filter(e => e.tier === 1);
           const t2Emotes = (<TwitchChannelEmote[]>emotes).filter(e => e.tier === 2);
           const t3Emotes = (<TwitchChannelEmote[]>emotes).filter(e => e.tier === 3);
-          emoteList = makeEmoteList("ttv", t1Emotes);
+          emoteList += makeEmoteList("ttv", t1Emotes);
           if (t2Emotes.length) {
             emoteList += `
               <h3>Tier 2</h3>
@@ -212,8 +218,20 @@ function makeEmoteListHtml(channel: Channel, emoteLists: BaseEmoteList<BaseEmote
               ${makeEmoteList("ttv", t3Emotes)}
             `;
           }
+        } else if (provider === "bttv") {
+          const channelEmotes = (<BttvChannelEmote[]>emotes).filter(e => !e.isShared);
+          const sharedEmotes = (<BttvChannelEmote[]>emotes).filter(e => e.isShared);
+          if (channelEmotes.length) {
+            emoteList += makeEmoteList("bttv", channelEmotes);
+          }
+          if (sharedEmotes.length) {
+            emoteList += `
+              <h3>Shared</h3>
+              ${makeEmoteList("bttv", sharedEmotes)}
+            `;
+          }
         } else {
-          emoteList = makeEmoteList(provider, emotes);
+          emoteList += makeEmoteList(provider, emotes);
         }
 
         return `
