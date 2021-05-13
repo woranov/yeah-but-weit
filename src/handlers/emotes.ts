@@ -16,6 +16,7 @@ import { ChannelEmote as BttvChannelEmote } from "../emotes/bttv";
 const REDIRECT_PROPERTIES = [
   "EMOTE_IMAGE_URL", "EMOTE_INFO_PAGE_URL", "EMOTE_TESTER_URL",
   "EMOTE_CREATOR_CHANNEL_URL", "EMOTE_SUPIBOT_ORIGIN_URL",
+  "EMOTE_CREATOR_EMOTE_LIST_URL",
 ] as const;
 type RedirectProperty = typeof REDIRECT_PROPERTIES[number];
 
@@ -44,6 +45,9 @@ const REDIRECT_PROPERTY_ALIASES: RedirectPropertyAliasesType = {
   ],
   EMOTE_SUPIBOT_ORIGIN_URL: [
     "origin", "originurl",
+  ],
+  EMOTE_CREATOR_EMOTE_LIST_URL: [
+    "list", "listurl",
   ],
 };
 
@@ -111,6 +115,13 @@ async function getProperty({ request, emote, property }: {
         return null;
       }
     }
+    case "EMOTE_CREATOR_EMOTE_LIST_URL":
+      if (emote instanceof BaseChannelEmote) {
+        const url = new URL(request.url);
+        return `${url.protocol}//${url.hostname}/list/${emote.creator.name}`;
+      } else {
+        return null;
+      }
   }
 }
 
