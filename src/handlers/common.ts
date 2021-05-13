@@ -42,12 +42,15 @@ function createHtml({
   const ogPropStrings = [];
 
   if (ogProperties) {
-    const { title, description, imageUrl } = ogProperties;
+    const { title, description, author = null, imageUrl } = ogProperties;
     if (title) {
       ogPropStrings.push(`<meta property='og:title' content='${title}'>`);
     }
     if (description) {
       ogPropStrings.push(`<meta property='og:description' content='${description}'>`);
+    }
+    if (author) {
+      ogPropStrings.push(`<meta property='og:author' content='${author}'>`)
     }
     if (imageUrl) {
       ogPropStrings.push(

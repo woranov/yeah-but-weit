@@ -12,6 +12,7 @@ interface HtmlCreateModel {
   ogProperties?: {
     title?: string | null;
     description?: string | null;
+    author?: string | null;
     imageUrl?: string | null;
   } | null;
   head?: string;

@@ -42,6 +42,8 @@ async function find(
   let candidates: BaseEmote[] = [];
   for (const provider of providers) {
     const emote = await EMOTE_PROVIDERS[provider].find({ code, channel });
+    console.debug("provider", provider);
+    console.debug("emote", emote);
     if (emote && (
       (provider == "ttv" || emote instanceof BaseGlobalEmote)
       || (channel && !(emote instanceof BaseGlobalEmote))

@@ -7,10 +7,15 @@ import { originUrl } from "../supibot";
 import { BaseEmoteList } from "../emotes/base";
 import {
   ChannelEmote as TwitchChannelEmote,
+  GlobalEmote as TwitchGlobalEmote,
   EmoteList as TwitchEmoteList,
   TwitchEmotesApiSentIncorrect404,
 } from "../emotes/ttv";
-import { ChannelEmote as BttvChannelEmote } from "../emotes/bttv";
+import {
+  ChannelEmote as BttvChannelEmote,
+  GlobalEmote as BttvGlobalEmote,
+} from "../emotes/bttv";
+import { GlobalEmote as FfzGlobalEmote } from "../emotes/ffz";
 
 
 const REDIRECT_PROPERTIES = [
@@ -169,6 +174,20 @@ async function createEmoteResponseHtml(
     `;
   }
 
+  let author: string;
+  if (emote instanceof BaseChannelEmote) {
+    author = emote.creator.displayName;
+  } else if (emote instanceof TwitchGlobalEmote) {
+    author = "Twitch"
+  } else if (emote instanceof BttvGlobalEmote) {
+    author = "BetterTTV";
+  } else if (emote instanceof FfzGlobalEmote) {
+    author = "FrankerFaceZ";
+  } else {
+    throw Error("dank");
+  }
+  console.log("emote author", author);
+
   return createHtml({
     title: {
       text: emote.code,
@@ -186,6 +205,7 @@ async function createEmoteResponseHtml(
           ? " (Supibot origin available)"
           : ""
       ),
+      author,
       imageUrl: emote.imageUrl(),
     },
     head: extraHead,
