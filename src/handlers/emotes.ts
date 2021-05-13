@@ -186,7 +186,6 @@ async function createEmoteResponseHtml(
   } else {
     throw Error("dank");
   }
-  console.log("emote author", author);
 
   return createHtml({
     title: {
