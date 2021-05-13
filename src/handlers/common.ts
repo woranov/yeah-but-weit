@@ -134,7 +134,7 @@ function createHtml({
           main ul.provider-emote-list li {
             display: inline-block;
             padding: 0.1rem;
-            max-width: 4rem;
+            max-height: 4rem;
           }
           main ul.provider-emote-list li img {
             max-width: 100%;
