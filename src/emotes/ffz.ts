@@ -102,10 +102,10 @@ async function listGlobal(): Promise<GlobalEmote[] | null> {
       data.sets[setId.toString()].emoticons.map(
         ({ id, name: code, urls }: FfzEmoteEntry) => {
           const availableScales = <AvailableScalesArray>(
-              [...Object.keys(urls)].map(scale => {
-                const scaleNum = parseInt(scale);
-                return scaleNum === 4 ? 3 : scaleNum;
-              })
+            [...Object.keys(urls)].map(scale => {
+              const scaleNum = parseInt(scale);
+              return scaleNum === 4 ? 3 : scaleNum;
+            })
           );
 
           globalEmotes.push(

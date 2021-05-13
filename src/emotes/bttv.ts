@@ -196,11 +196,14 @@ async function listTop({ count = 4_500, force = false }: {
   }
 
   return emoteData.map(e => new ChannelEmote({
-    id: e.emote.id, code: e.emote.code, creator: {
+    id: e.emote.id,
+    code: e.emote.code,
+    creator: {
       id: parseInt(e.emote.user.providerId),
       name: e.emote.user.name,
       displayName: e.emote.user.displayName,
-    }, usageCount: e.total + 1,
+    },
+    usageCount: e.total + 1,
   }));
 }
 
@@ -257,11 +260,14 @@ async function findCode(code: string, considerOldestN: number = 5): Promise<Chan
     if (bestResult) {
       const { entry, usageCount } = bestResult;
       return new ChannelEmote({
-        id: entry.id, code: entry.code, creator: {
+        id: entry.id,
+        code: entry.code,
+        creator: {
           id: parseInt(entry.user.providerId),
           name: entry.user.name,
           displayName: entry.user.displayName,
-        }, usageCount: usageCount + 1,
+        },
+        usageCount: usageCount + 1,
       });
     }
   }

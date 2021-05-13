@@ -156,11 +156,13 @@ async function createEmoteResponseHtml(
         }
       </style>
     `;
+
     const links = contextChannelNames.map(name => `
       <li><a href='/list/${name}'>@${name} Emote List</a></li>
     `).join("\n");
+
     extraHtml += `
-      <span style="display: inline-block;"></span>
+      <span style='display: inline-block;'></span>
       <ul class='goto-channel-emotes-links'>
         ${links}
       </ul>
@@ -212,7 +214,7 @@ function makeEmoteListHtml(channel: ChannelWithProfilePicture, emoteLists: BaseE
     `).join("\n");
 
     return `<ul class='provider-emote-list'>${listItems}</ul>`;
-  }
+  };
 
   const providerHtmlSections = emoteLists
     .map(emoteList => {
@@ -341,7 +343,7 @@ export const makeHandler = (provider: EmoteProviderName | null = null) => {
             .toLowerCase()
             .split(",")
             .map(s => s.trim())
-            .filter(Boolean)
+            .filter(Boolean),
         )];
 
         if (getRawValues.length === 0) {
