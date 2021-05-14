@@ -4,17 +4,14 @@ import { checkChannelName, fetchChannel } from "../twitch";
 import { BaseChannelEmote, BaseEmote, EMOTE_PROVIDERS, find } from "../emotes";
 import { addLinkToAtMentionTransformer, createHtml, notFoundHandler } from "./common";
 import { originUrl } from "../supibot";
-import { BaseEmoteList } from "../emotes/base";
+import { BaseEmoteList, providerFullNames } from "../emotes/base";
 import {
   ChannelEmote as TwitchChannelEmote,
-  GlobalEmote as TwitchGlobalEmote,
   EmoteList as TwitchEmoteList,
+  GlobalEmote as TwitchGlobalEmote,
   TwitchEmotesApiSentIncorrect404,
 } from "../emotes/ttv";
-import {
-  ChannelEmote as BttvChannelEmote,
-  GlobalEmote as BttvGlobalEmote,
-} from "../emotes/bttv";
+import { ChannelEmote as BttvChannelEmote, GlobalEmote as BttvGlobalEmote } from "../emotes/bttv";
 import { GlobalEmote as FfzGlobalEmote } from "../emotes/ffz";
 
 
@@ -178,11 +175,11 @@ async function createEmoteResponseHtml(
   if (emote instanceof BaseChannelEmote) {
     author = emote.creator.displayName;
   } else if (emote instanceof TwitchGlobalEmote) {
-    author = "Twitch"
+    author = providerFullNames["ttv"];
   } else if (emote instanceof BttvGlobalEmote) {
-    author = "BetterTTV";
+    author = providerFullNames["bttv"];
   } else if (emote instanceof FfzGlobalEmote) {
-    author = "FrankerFaceZ";
+    author = providerFullNames["ffz"];
   } else {
     throw Error("dank");
   }
@@ -244,16 +241,21 @@ function makeEmoteListHtml(channel: ChannelWithProfilePicture, emoteLists: BaseE
           const t1Emotes = (<TwitchChannelEmote[]>emotes).filter(e => e.tier === 1);
           const t2Emotes = (<TwitchChannelEmote[]>emotes).filter(e => e.tier === 2);
           const t3Emotes = (<TwitchChannelEmote[]>emotes).filter(e => e.tier === 3);
-          emoteList += makeEmoteList("ttv", t1Emotes);
+          if (t1Emotes.length) {
+            emoteList += `
+              <h3>Tier 1 <small>(${t1Emotes.length})</small></h3>
+              ${makeEmoteList("ttv", t1Emotes)}
+            `;
+          }
           if (t2Emotes.length) {
             emoteList += `
-              <h3>Tier 2</h3>
+              <h3>Tier 2 <small>(${t2Emotes.length})</small></h3>
               ${makeEmoteList("ttv", t2Emotes)}
             `;
           }
           if (t3Emotes.length) {
             emoteList += `
-              <h3>Tier 3</h3>
+              <h3>Tier 3 <small>(${t3Emotes.length})</small></h3>
               ${makeEmoteList("ttv", t3Emotes)}
             `;
           }
@@ -261,11 +263,14 @@ function makeEmoteListHtml(channel: ChannelWithProfilePicture, emoteLists: BaseE
           const channelEmotes = (<BttvChannelEmote[]>emotes).filter(e => !e.isShared);
           const sharedEmotes = (<BttvChannelEmote[]>emotes).filter(e => e.isShared);
           if (channelEmotes.length) {
-            emoteList += makeEmoteList("bttv", channelEmotes);
+            emoteList += `
+              <h3>Channel <small>(${channelEmotes.length})</small></h3>
+              ${makeEmoteList("bttv", channelEmotes)}
+            `;
           }
           if (sharedEmotes.length) {
             emoteList += `
-              <h3>Shared</h3>
+              <h3>Shared <small>(${sharedEmotes.length})</small></h3>
               ${makeEmoteList("bttv", sharedEmotes)}
             `;
           }
@@ -274,7 +279,7 @@ function makeEmoteListHtml(channel: ChannelWithProfilePicture, emoteLists: BaseE
         }
 
         return `
-          <h2><a href='${overviewUrl}'>${provider.toUpperCase()} (${emotes!.length})</a></h2>
+          <h2><a href='${overviewUrl}'>${providerFullNames[provider]} (${emotes!.length})</a></h2>
           ${emoteList}
         `;
       } else {

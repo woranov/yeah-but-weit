@@ -66,6 +66,13 @@ export abstract class BaseEmoteList<T extends BaseEmote> {
 }
 
 
+export const providerFullNames = <Record<EmoteProviderName, string>>{
+  "ttv": "Twitch",
+  "bttv": "BetterTTV",
+  "ffz": "FrankerFaceZ",
+};
+
+
 /*
 export interface ProviderModule<T extends BaseEmote> {
   find(args: { code: string, channel: Channel | null }): Promise<T | null>;
