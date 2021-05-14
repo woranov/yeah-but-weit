@@ -1,6 +1,6 @@
 import { BaseChannelEmote, BaseEmoteList, BaseGlobalEmote } from "./base";
 import { formatNumber, pluralize } from "../formatting";
-import { CACHE_TTL, LONG_CACHE_TTL } from "../config";
+import { CACHE_TTL, LONG_CACHE_TTL, MEDIUM_CACHE_TTL } from "../config";
 import { preferCaseSensitiveFind } from "./common";
 
 
@@ -9,7 +9,7 @@ const EMOTE_CODE_REGEX = /^(\w{3,}|:\w+:)$/;
 
 class GlobalEmote extends BaseGlobalEmote {
   constructor({ ...args }: {
-    id: number | string,
+    id: number | string,  // TODO: why is this `number | string`?
     code: string,
   }) {
     super({ ...args, availableScales: [1, 2, 3] });
@@ -30,7 +30,7 @@ class GlobalEmote extends BaseGlobalEmote {
 
 
 class ChannelEmote extends BaseChannelEmote {
-  readonly usageCount: number | null;
+  usageCount: number | null;
   readonly isShared: boolean | null;
 
   constructor(
@@ -84,10 +84,19 @@ class EmoteList extends BaseEmoteList<Emote> {
 
 
 async function fetchUsageCount(emoteId: string): Promise<number> {
-  const response = await fetch(
-    `https://api.betterttv.net/3/emotes/${emoteId}/shared`,
-  );
-  return parseInt(response.headers.get("x-total")!);
+  const key = `count:bttv:${emoteId}`;
+
+  let data = <string | null>await EMOTES.get(key, "text");
+
+  if (!data) {
+    const response = await fetch(
+      `https://api.betterttv.net/3/emotes/${emoteId}/shared`,
+    );
+    data = response.headers.get("x-total")!;
+    await EMOTES.put(key, data, { expirationTtl: MEDIUM_CACHE_TTL });
+  }
+
+  return parseInt(data) + 1;
 }
 
 
@@ -203,7 +212,7 @@ async function listTop({ count = 4_500, force = false }: {
       name: e.emote.user.name,
       displayName: e.emote.user.displayName,
     },
-    usageCount: e.total + 1,
+    usageCount: e.total,
   }));
 }
 
@@ -267,7 +276,7 @@ async function findCode(code: string, considerOldestN: number = 5): Promise<Chan
           name: entry.user.name,
           displayName: entry.user.displayName,
         },
-        usageCount: usageCount + 1,
+        usageCount: usageCount,
       });
     }
   }
@@ -283,7 +292,7 @@ async function find(
     return null;
   }
 
-  let emote = null;
+  let emote: Emote | null = null;
   {
     const globalEmotes = await listGlobal();
     if (globalEmotes) {
@@ -303,6 +312,10 @@ async function find(
       emote = await findCode(code);
     }
   }
+  if (emote instanceof ChannelEmote && emote.usageCount === null) {
+    emote.usageCount = await fetchUsageCount(emote.id.toString());
+  }
+
   return emote;
 }
 
