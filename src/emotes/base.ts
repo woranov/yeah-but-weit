@@ -1,10 +1,6 @@
 import { find as findSupibotOrigin } from "../supibot";
 
 
-export type ImageScale = 1 | 2 | 3;
-export type AvailableScalesArray = [ImageScale, ...ImageScale[]];
-
-
 export abstract class BaseEmote {
   readonly id: number | string;
   readonly code: string;

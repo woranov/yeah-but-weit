@@ -1,6 +1,9 @@
 type TwitchChannelEmoteTier = 1 | 2 | 3;
 type EmoteProviderName = "ttv" | "bttv" | "ffz";
 
+type ImageScale = 1 | 2 | 3;
+type AvailableScalesArray = [ImageScale, ...ImageScale[]];
+
 
 interface TwitchEmoteEntry {
   id: number;

@@ -1,4 +1,4 @@
-import { BaseChannelEmote, BaseEmoteList, BaseGlobalEmote, ImageScale } from "./base";
+import { BaseChannelEmote, BaseEmoteList, BaseGlobalEmote } from "./base";
 import { CACHE_TTL } from "../config";
 import { checkEmoteCode } from "../twitch";
 import { preferCaseSensitiveFind } from "./common";

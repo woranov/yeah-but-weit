@@ -1,4 +1,4 @@
-import { AvailableScalesArray, BaseChannelEmote, BaseEmoteList, BaseGlobalEmote, ImageScale } from "./base";
+import { BaseChannelEmote, BaseEmoteList, BaseGlobalEmote } from "./base";
 import { formatNumber, pluralize } from "../formatting";
 import { CACHE_TTL } from "../config";
 import { preferCaseSensitiveFind } from "./common";
