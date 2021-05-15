@@ -1,5 +1,6 @@
 import { MEDIUM_CACHE_TTL, SHORT_CACHE_TTL, SUPIBOT_USER_AGENT } from "./config";
 import { BaseEmote } from "./emotes";
+import cached from "./caching";
 
 
 function originUrl(id: string): string {
@@ -9,29 +10,33 @@ function originUrl(id: string): string {
 
 async function listOrigins(): Promise<SupibotEmoteOriginEntry[] | null> {
   const key = "list:supibot:origins";
+  const getCachedPromise = cached<SupibotEmoteOriginEntry[] | null>(
+    EMOTES, key,
+    async () => {
+      const response = await fetch("https://supinic.com/api/data/origin/list", {
+        headers: {
+          "User-Agent": SUPIBOT_USER_AGENT,
+        },
+      });
 
-  let data = <SupibotEmoteOriginEntry[] | null>await EMOTES.get(key, "json");
+      return response.ok
+        ? (await response.json()).data
+        : null;
+    },
+    { expirationTtl: MEDIUM_CACHE_TTL },
+  );
 
-  if (!data) {
-    const fetchPromise = fetch("https://supinic.com/api/data/origin/list", {
-      headers: {
-        "User-Agent": SUPIBOT_USER_AGENT,
-      },
-    });
-    const response = await Promise.race([
-      fetchPromise,
-      new Promise(resolve => setTimeout(resolve, 5000)),
-    ]);
+  const data = await Promise.race([
+    getCachedPromise,
+    new Promise(resolve => setTimeout(resolve, 5000)),
+  ]);
 
-    if (response && (<Response>response).ok) {
-      data = (await (<Response>response).json()).data;
-      await EMOTES.put(key, JSON.stringify(data), { expirationTtl: MEDIUM_CACHE_TTL });
-    } else {
-      await EMOTES.put(key, JSON.stringify([]), { expirationTtl: SHORT_CACHE_TTL });
-    }
+  if (data) {
+    return <SupibotEmoteOriginEntry[]>data;
+  } else {
+    await EMOTES.put(key, JSON.stringify([]), { expirationTtl: SHORT_CACHE_TTL });
+    return [];
   }
-
-  return data;
 }
 
 

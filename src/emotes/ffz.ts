@@ -2,6 +2,7 @@ import { BaseChannelEmote, BaseEmoteList, BaseGlobalEmote } from "./base";
 import { formatNumber, pluralize } from "../formatting";
 import { CACHE_TTL } from "../config";
 import { preferCaseSensitiveFind } from "./common";
+import cached from "../caching";
 
 
 const EMOTE_CODE_REGEX = /^(!|\w){3,}$/;
@@ -83,19 +84,17 @@ class EmoteList extends BaseEmoteList<Emote> {
 
 
 async function listGlobal(): Promise<GlobalEmote[] | null> {
-  const key = `list:ffz:global`;
+  const data = await cached<FfzGlobalEmoteListResult | null>(
+    EMOTES, "list:ffz:global",
+    async () => {
+      const response = await fetch("https://api.frankerfacez.com/v1/set/global");
+      return response.ok
+        ? <FfzGlobalEmoteListResult>await response.json()
+        : null;
+    },
+    { expirationTtl: CACHE_TTL },
+  );
 
-  let data = <FfzGlobalEmoteListResult | null>await EMOTES.get(key, "json");
-
-  if (!data) {
-    const response = await fetch(
-      "https://api.frankerfacez.com/v1/set/global",
-    );
-    if (response.ok) {
-      data = <FfzGlobalEmoteListResult>await response.json();
-      await EMOTES.put(key, JSON.stringify(data), { expirationTtl: CACHE_TTL });
-    }
-  }
   if (data) {
     const globalEmotes: GlobalEmote[] = [];
     for (const setId of [...data.default_sets, ...Object.keys(data.users)]) {
@@ -122,19 +121,17 @@ async function listGlobal(): Promise<GlobalEmote[] | null> {
 
 
 async function listChannel(channel: ChannelWithId): Promise<EmoteList> {
-  const key = `list:ffz:${channel.id}`;
+  const data = await cached<FfzEmoteListResult | null>(
+    EMOTES, `list:ffz:${channel.id}`,
+    async () => {
+      const response = await fetch(`https://api.frankerfacez.com/v1/room/id/${channel.id}`);
+      return response.ok
+        ? <FfzEmoteListResult>await response.json()
+        : null;
+    },
+    { expirationTtl: CACHE_TTL },
+  );
 
-  let data = <FfzEmoteListResult | null>await EMOTES.get(key, "json");
-
-  if (!data) {
-    const response = await fetch(
-      `https://api.frankerfacez.com/v1/room/id/${channel.id}`,
-    );
-    if (response.ok) {
-      data = <FfzEmoteListResult>await response.json();
-      await EMOTES.put(key, JSON.stringify(data), { expirationTtl: CACHE_TTL });
-    }
-  }
   if (data) {
     return new EmoteList({
       channel,
@@ -159,39 +156,39 @@ async function listChannel(channel: ChannelWithId): Promise<EmoteList> {
 
 
 async function findCode(code: string): Promise<ChannelEmote[] | null> {
-  const key = `search:ffz:${code.toLowerCase()}`;
-  const perPage = 200;
-  const maxPages = 2;
+  const data = await cached<FfzEmoteEntry[] | null>(
+    EMOTES, `search:ffz:${code.toLowerCase()}`,
+    async () => {
+      let results: FfzEmoteEntry[] = [];
+      const perPage = 200;
+      const maxPages = 2;
+      let error = false;
 
-  let data = <FfzEmoteEntry[] | null>await EMOTES.get(key, "json");
-
-  if (!data) {
-    data = [];
-    let error = false;
-
-    for (let pageNum = 1; pageNum < maxPages + 1; pageNum++) {
-      const response = await fetch(
-        `https://api.frankerfacez.com/v1/emotes?q=${code}&per_page=${perPage}&page=${pageNum}&sensitive=false&sort=count-desc`,
-      );
-      if (!response.ok) {
-        error = true;
-        break;
-      } else {
-        const page = <FfzEmoteSearchResult>await response.json();
-        data = [
-          ...data,
-          ...page.emoticons,
-        ];
-        if (page._pages === pageNum) {
+      for (let pageNum = 1; pageNum < maxPages + 1; pageNum++) {
+        const response = await fetch(
+          `https://api.frankerfacez.com/v1/emotes?q=${code}&per_page=${perPage}&page=${pageNum}&sensitive=false&sort=count-desc`,
+        );
+        if (!response.ok) {
+          error = true;
           break;
+        } else {
+          const page = <FfzEmoteSearchResult>await response.json();
+          results = [
+            ...results,
+            ...page.emoticons,
+          ];
+          if (page._pages === pageNum) {
+            break;
+          }
         }
       }
-    }
-    if (!error)
-      await EMOTES.put(
-        key, JSON.stringify(data), { expirationTtl: CACHE_TTL },
-      );
-  }
+      return error
+        ? null
+        : results;
+    },
+    { expirationTtl: CACHE_TTL },
+  );
+
   if (data) {
     const withMatchingCode = data
       .filter(({ name: searchEntryEmoteCode }: FfzEmoteEntry) => searchEntryEmoteCode.toLowerCase() === code.toLowerCase())

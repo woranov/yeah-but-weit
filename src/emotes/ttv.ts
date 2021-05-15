@@ -2,6 +2,7 @@ import { BaseChannelEmote, BaseEmoteList, BaseGlobalEmote } from "./base";
 import { CACHE_TTL } from "../config";
 import { checkEmoteCode } from "../twitch";
 import { preferCaseSensitiveFind } from "./common";
+import cached from "../caching";
 
 
 class GlobalEmote extends BaseGlobalEmote {
@@ -80,27 +81,27 @@ const TWITCHEMOTES_API_PLAN_ALIASES: { [key: string]: TwitchChannelEmoteTier } =
 };
 
 async function listChannel(channel: ChannelWithId): Promise<EmoteList> {
-  const key = `list:ttv:${channel.id}`;
+  const data = await cached<TwitchEmoteListResult | null>(
+    EMOTES, `list:ttv:${channel.id}`,
+    async () => {
+      const response = await fetch(
+        `https://api.twitchemotes.com/api/v4/channels/${channel.id}`,
+      );
 
-  let data = <TwitchEmoteListResult | null>await EMOTES.get(key, "json");
-
-  if (!data) {
-    const response = await fetch(
-      `https://api.twitchemotes.com/api/v4/channels/${channel.id}`,
-    );
-
-    if (response.ok) {
-      data = <TwitchEmoteListResult>await response.json();
-      await EMOTES.put(key, JSON.stringify(data), { expirationTtl: CACHE_TTL });
-    } else {
-      if (
-        response.status == 404
-        && (await response.json()).error.toLowerCase().includes("channel not found")
-      ) {
-        throw new TwitchEmotesApiSentIncorrect404();
+      if (response.ok) {
+        return await response.json();
+      } else {
+        if (
+          response.status == 404
+          && (await response.json()).error.toLowerCase().includes("channel not found")
+        ) {
+          throw new TwitchEmotesApiSentIncorrect404();
+        }
       }
-    }
-  }
+      return null;
+    },
+    { expirationTtl: CACHE_TTL },
+  );
 
   if (data) {
     if (channel.id === 0) {
@@ -150,22 +151,19 @@ const DOES_NOT_EXIST_SENTINEL: TwitchEmoteLookupResult = {
 
 
 async function findCode(code: string): Promise<Emote | null> {
-  const key = `ttv:${code}`;
+  const data = await cached<TwitchEmoteLookupResult | null>(
+    EMOTES, `ttv:${code}`,
+    async () => {
+      const response = await fetch(
+        `https://api.ivr.fi/twitch/emotes/${code}`,
+      );
 
-  let data = <TwitchEmoteLookupResult | null>await EMOTES.get(key, "json");
-
-  if (!data) {
-    const response = await fetch(
-      `https://api.ivr.fi/twitch/emotes/${code}`,
-    );
-
-    if (response.ok) {
-      data = await response.json();
-    } else {
-      data = DOES_NOT_EXIST_SENTINEL;
-    }
-    await EMOTES.put(key, JSON.stringify(data), { expirationTtl: CACHE_TTL });
-  }
+      return response.ok
+        ? await response.json()
+        : DOES_NOT_EXIST_SENTINEL;
+    },
+    { expirationTtl: CACHE_TTL },
+  );
 
   if (data) {
     if (data.emoteid === DOES_NOT_EXIST_SENTINEL_EMOTE_ID) {

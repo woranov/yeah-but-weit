@@ -2,6 +2,7 @@ import { BaseChannelEmote, BaseEmoteList, BaseGlobalEmote } from "./base";
 import { formatNumber, pluralize } from "../formatting";
 import { CACHE_TTL, LONG_CACHE_TTL, MEDIUM_CACHE_TTL } from "../config";
 import { preferCaseSensitiveFind } from "./common";
+import cached from "../caching";
 
 
 const EMOTE_CODE_REGEX = /^(\w{3,}|:\w+:)$/;
@@ -84,37 +85,35 @@ class EmoteList extends BaseEmoteList<Emote> {
 
 
 async function fetchUsageCount(emoteId: string): Promise<number> {
-  const key = `count:bttv:${emoteId}`;
-
-  let data = <string | null>await EMOTES.get(key, "text");
-
-  if (!data) {
-    const response = await fetch(
-      `https://api.betterttv.net/3/emotes/${emoteId}/shared`,
-    );
-    data = response.headers.get("x-total")!;
-    await EMOTES.put(key, data, { expirationTtl: MEDIUM_CACHE_TTL });
-  }
+  const data = await cached<string>(
+    EMOTES, `count:bttv:${emoteId}`,
+    async () => {
+      const response = await fetch(
+        `https://api.betterttv.net/3/emotes/${emoteId}/shared`,
+      );
+      return response.headers.get("x-total")!;
+    },
+    { type: "text", expirationTtl: MEDIUM_CACHE_TTL },
+  );
 
   return parseInt(data) + 1;
 }
 
 
 async function listGlobal(): Promise<GlobalEmote[] | null> {
-  const key = `list:bttv:global`;
+  const data = await cached<BttvEmoteEntry[] | null>(
+    EMOTES, `list:bttv:global`,
+    async () => {
+      const response = await fetch(
+        "https://api.betterttv.net/3/cached/emotes/global",
+      );
 
-  let data = <BttvEmoteEntry[] | null>await EMOTES.get(key, "json");
-
-  if (!data) {
-    const response = await fetch(
-      "https://api.betterttv.net/3/cached/emotes/global",
-    );
-
-    if (response.ok) {
-      data = <BttvEmoteEntry[]>await response.json();
-      await EMOTES.put(key, JSON.stringify(data), { expirationTtl: CACHE_TTL });
-    }
-  }
+      return response.ok
+        ? <BttvEmoteEntry[]>await response.json()
+        : null;
+    },
+    { expirationTtl: CACHE_TTL },
+  );
 
   if (data) {
     return data.map(e => new GlobalEmote({ id: e.id, code: e.code }));
@@ -125,20 +124,19 @@ async function listGlobal(): Promise<GlobalEmote[] | null> {
 
 
 async function listChannel(channel: ChannelWithId): Promise<EmoteList> {
-  const key = `list:bttv:${channel.id}`;
+  const data = await cached<BttvEmoteListResult | null>(
+    EMOTES, `list:bttv:${channel.id}`,
+    async () => {
+      const response = await fetch(
+        `https://api.betterttv.net/3/cached/users/twitch/${channel.id}`,
+      );
 
-  let data = <BttvEmoteListResult | null>await EMOTES.get(key, "json");
-
-  if (!data) {
-    const response = await fetch(
-      `https://api.betterttv.net/3/cached/users/twitch/${channel.id}`,
-    );
-
-    if (response.ok) {
-      data = <BttvEmoteListResult>await response.json();
-      await EMOTES.put(key, JSON.stringify(data), { expirationTtl: CACHE_TTL });
-    }
-  }
+      return response.ok
+        ? <BttvEmoteListResult>await response.json()
+        : null;
+    },
+    { expirationTtl: CACHE_TTL },
+  );
 
   if (data) {
     return new EmoteList({
@@ -173,38 +171,36 @@ async function listChannel(channel: ChannelWithId): Promise<EmoteList> {
 async function listTop({ count = 4_500, force = false }: {
   count?: number, force?: boolean
 }): Promise<ChannelEmote[]> {
-  const key = "list:bttv:top";
-  const perPage = 100;
-  let emoteData = force
-    ? null
-    : <BttvTrendingEmoteListEntry[] | null>await EMOTES.get(key, "json");
+  const data = await cached<BttvTrendingEmoteListEntry[] | null>(
+    EMOTES, "list:bttv:top",
+    async () => {
+      const perPage = 100;
+      const emoteData: BttvTrendingEmoteListEntry[] = [];
+      let offset = 0;
+      let error = false;
 
-  if (!emoteData) {
-    emoteData = [];
-    let offset = 0;
-    let error = false;
-
-    while (count > 0) {
-      const response = await fetch(
-        `https://api.betterttv.net/3/emotes/shared/top?offset=${offset}&limit=${perPage}`,
-      );
-      if (!response.ok) {
-        error = true;
-        break;
-      } else {
-        const page = await response.json();
-        offset += perPage;
-        count -= page.length;
-        emoteData.push(...page);
+      while (count > 0) {
+        const response = await fetch(
+          `https://api.betterttv.net/3/emotes/shared/top?offset=${offset}&limit=${perPage}`,
+        );
+        if (!response.ok) {
+          error = true;
+          break;
+        } else {
+          const page = await response.json();
+          offset += perPage;
+          count -= page.length;
+          emoteData.push(...page);
+        }
       }
-    }
-    if (!error)
-      await EMOTES.put(
-        key, JSON.stringify(emoteData), { expirationTtl: LONG_CACHE_TTL },
-      );
-  }
+      return error
+        ? null
+        : emoteData;
+    },
+    { forceRefresh: force, expirationTtl: LONG_CACHE_TTL },
+  ) ?? [];
 
-  return emoteData.map(e => new ChannelEmote({
+  return data.map(e => new ChannelEmote({
     id: e.emote.id,
     code: e.emote.code,
     creator: {
@@ -218,44 +214,45 @@ async function listTop({ count = 4_500, force = false }: {
 
 
 async function findCode(code: string, considerOldestN: number = 5): Promise<ChannelEmote | null> {
-  const key = `search:bttv:${code}`;
-  const perPage = 100;
-  let emoteData: BttvEmoteSearchResultEntry[] | null = <BttvEmoteSearchResultEntry[] | null>await EMOTES.get(key, "json");
+  const data = await cached<BttvEmoteSearchResultEntry[] | null>(
+    EMOTES, `search:bttv:${code}`,
+    async () => {
+      const perPage = 100;
+      let emoteData: BttvEmoteSearchResultEntry[] = [];
+      let offset = 0;
+      let error = false;
 
-  if (!emoteData) {
-    emoteData = [];
-    let offset = 0;
-    let error = false;
-
-    while (true) {
-      const response = await fetch(
-        `https://api.betterttv.net/3/emotes/shared/search?query=${code}&offset=${offset}&limit=${perPage}`,
-      );
-      if (!response.ok) {
-        error = true;
-        break;
-      } else {
-        const page = <BttvEmoteSearchResultEntry[]>await response.json();
-        emoteData = [
-          ...emoteData,
-          ...page.filter(
-            entry => entry.code.toLowerCase() === code.toLowerCase(),
-          ),
-        ];
-        if (page.length < perPage) {
+      while (true) {
+        const response = await fetch(
+          `https://api.betterttv.net/3/emotes/shared/search?query=${code}&offset=${offset}&limit=${perPage}`,
+        );
+        if (!response.ok) {
+          error = true;
           break;
+        } else {
+          const page = <BttvEmoteSearchResultEntry[]>await response.json();
+          emoteData = [
+            ...emoteData,
+            ...page.filter(
+              entry => entry.code.toLowerCase() === code.toLowerCase(),
+            ),
+          ];
+          if (page.length < perPage) {
+            break;
+          }
+          offset += perPage;
         }
-        offset += perPage;
       }
-    }
-    if (!error)
-      await EMOTES.put(
-        key, JSON.stringify(emoteData), { expirationTtl: CACHE_TTL },
-      );
-  }
-  if (emoteData.length > 0) {
+      return error
+        ? null
+        : emoteData;
+    },
+    { expirationTtl: CACHE_TTL },
+  ) ?? [];
+
+  if (data.length > 0) {
     const entriesWithUsageCount = await Promise.all(
-      (<BttvEmoteSearchResultEntry[]>emoteData
+      (<BttvEmoteSearchResultEntry[]>data
         .slice(-considerOldestN))
         .map(async entry => {
           return { entry, code: entry.code, usageCount: await fetchUsageCount(entry.id) };
