@@ -48,6 +48,9 @@ router
   .get("/ttv/:channelName/:code", ttvHandler)
   .get("/bttv/:channelName/:code", bttvHandler)
   .get("/ffz/:channelName/:code", ffzHandler)
+  .get("/:channelName/ttv/:code", ttvHandler)
+  .get("/:channelName/bttv/:code", bttvHandler)
+  .get("/:channelName/ffz/:code", ffzHandler)
   .all("*", notFoundHandler);
 
 
