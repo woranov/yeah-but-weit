@@ -140,6 +140,7 @@ async function listChannel(channel: ChannelWithId): Promise<EmoteList> {
 
 
 const DOES_NOT_EXIST_SENTINEL_EMOTE_ID = "-1";
+// noinspection JSUnusedLocalSymbols
 const DOES_NOT_EXIST_SENTINEL: TwitchEmoteLookupResult = {
   channelid: null,
   channel: null,
@@ -160,7 +161,7 @@ async function findCode(code: string): Promise<Emote | null> {
 
       return response.ok
         ? await response.json()
-        : DOES_NOT_EXIST_SENTINEL;
+        : null;
     },
     { expirationTtl: CACHE_TTL },
   );
