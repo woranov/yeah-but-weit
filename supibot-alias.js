@@ -1,5 +1,5 @@
 // noinspection DuplicatedCode
-(() => {
+(function() {
   const pathSegments = [];
   const querySegments = [];
   // noinspection JSUnresolvedVariable
