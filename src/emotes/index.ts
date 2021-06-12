@@ -1,6 +1,7 @@
 import * as Ttv from "./ttv";
 import * as Bttv from "./bttv";
 import * as Ffz from "./ffz";
+import * as SevenTv from "./7tv";
 import { BaseChannelEmote, BaseEmote, BaseGlobalEmote } from "./base";
 
 
@@ -8,6 +9,7 @@ const EMOTE_PROVIDERS = {
   "ttv": Ttv,
   "bttv": Bttv,
   "ffz": Ffz,
+  "7tv": SevenTv,
 };
 
 
@@ -37,7 +39,7 @@ async function find(
     code: string, channel: ChannelWithId | null, provider: EmoteProviderName | null
   },
 ): Promise<BaseEmote | null> {
-  const providers: EmoteProviderName[] = provider ? [provider] : ["ttv", "ffz", "bttv"];
+  const providers: EmoteProviderName[] = provider ? [provider] : ["ttv", "ffz", "bttv", "7tv"];
 
   let candidates: BaseEmote[] = [];
   for (const provider of providers) {

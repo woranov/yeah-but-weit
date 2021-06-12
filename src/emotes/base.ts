@@ -70,6 +70,7 @@ export const providerFullNames = <Record<EmoteProviderName, string>>{
   "ttv": "Twitch",
   "bttv": "BetterTTV",
   "ffz": "FrankerFaceZ",
+  "7tv": "7TV",
 };
 
 

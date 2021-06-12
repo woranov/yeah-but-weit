@@ -13,6 +13,7 @@ import {
 } from "../emotes/ttv";
 import { ChannelEmote as BttvChannelEmote, GlobalEmote as BttvGlobalEmote } from "../emotes/bttv";
 import { GlobalEmote as FfzGlobalEmote } from "../emotes/ffz";
+import { GlobalEmote as SevenTvGlobalEmote } from "../emotes/7tv";
 
 
 const REDIRECT_PROPERTIES = [
@@ -180,6 +181,8 @@ async function createEmoteResponseHtml(
     author = providerFullNames["bttv"];
   } else if (emote instanceof FfzGlobalEmote) {
     author = providerFullNames["ffz"];
+  } else if (emote instanceof SevenTvGlobalEmote) {
+    author = providerFullNames["7tv"];
   } else {
     throw Error("dank");
   }
@@ -430,7 +433,7 @@ export async function listEmotesHandler(request: Request): Promise<Response> {
 
   const emoteLists: BaseEmoteList<BaseEmote>[] = [];
 
-  for (const provider of <EmoteProviderName[]>["ttv", "ffz", "bttv"]) {
+  for (const provider of <EmoteProviderName[]>["ttv", "ffz", "bttv", "7tv"]) {
     let providerEmoteList;
     try {
       providerEmoteList = await EMOTE_PROVIDERS[provider].listChannel(channel);

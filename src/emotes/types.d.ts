@@ -1,7 +1,7 @@
 type TwitchChannelEmoteTier = 1 | 2 | 3;
-type EmoteProviderName = "ttv" | "bttv" | "ffz";
+type EmoteProviderName = "ttv" | "bttv" | "ffz" | "7tv";
 
-type ImageScale = 1 | 2 | 3;
+type ImageScale = 1 | 2 | 3 | 4;
 type AvailableScalesArray = [ImageScale, ...ImageScale[]];
 
 
@@ -122,6 +122,26 @@ interface FfzGlobalEmoteListResult {
 interface FfzEmoteSearchResult {
   _pages: number;
   emoticons: FfzEmoteEntry[];
+}
+
+
+interface SevenTvEmoteEntry {
+  id: string;
+  name: string;
+  owner: {
+    id: string;
+    login: string;
+    display_name: string;
+    twitch_id: string;
+  };
+  channel_count: number;
+  visibility: number;
+}
+
+
+interface SevenTvChannelEmoteList {
+  id: string;
+  emotes: SevenTvEmoteEntry[];
 }
 
 

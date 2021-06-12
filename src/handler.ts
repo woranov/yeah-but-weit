@@ -23,6 +23,7 @@ const anyProviderHandler = makeHandler();
 const ttvHandler = makeHandler("ttv");
 const bttvHandler = makeHandler("bttv");
 const ffzHandler = makeHandler("ffz");
+const sevenTvHandler = makeHandler("7tv");
 
 router
   .get("/418", () => {
@@ -43,24 +44,30 @@ router
   .get("/list/ttv/:code", ttvHandler)
   .get("/list/bttv/:code", bttvHandler)
   .get("/list/ffz/:code", ffzHandler)
+  .get("/list/7tv/:code", sevenTvHandler)
   .get("/list/:channelName", listEmotesHandler)
   .get("/list/:channelName/:code", anyProviderHandler)
   .get("/list/ttv/:channelName/:code", ttvHandler)
   .get("/list/bttv/:channelName/:code", bttvHandler)
   .get("/list/ffz/:channelName/:code", ffzHandler)
+  .get("/list/7tv/:channelName/:code", sevenTvHandler)
   .get("/list/:channelName/ttv/:code", ttvHandler)
   .get("/list/:channelName/bttv/:code", bttvHandler)
   .get("/list/:channelName/ffz/:code", ffzHandler)
+  .get("/list/:channelName/7tv/:code", sevenTvHandler)
   .get("/ttv/:code", ttvHandler)
   .get("/bttv/:code", bttvHandler)
   .get("/ffz/:code", ffzHandler)
+  .get("/7tv/:code", sevenTvHandler)
   .get("/:channelName/:code", anyProviderHandler)
   .get("/ttv/:channelName/:code", ttvHandler)
   .get("/bttv/:channelName/:code", bttvHandler)
   .get("/ffz/:channelName/:code", ffzHandler)
+  .get("/7tv/:channelName/:code", sevenTvHandler)
   .get("/:channelName/ttv/:code", ttvHandler)
   .get("/:channelName/bttv/:code", bttvHandler)
   .get("/:channelName/ffz/:code", ffzHandler)
+  .get("/:channelName/7tv/:code", sevenTvHandler)
   .all("*", notFoundHandler);
 
 
