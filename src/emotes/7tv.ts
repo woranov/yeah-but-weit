@@ -42,7 +42,7 @@ class GlobalEmote extends BaseGlobalEmote {
     return `https://7tv.app/emotes/${this.id}`;
   }
 
-  imageUrl(preferScale: ImageScale = 3): string {
+  imageUrl(preferScale: ImageScale = 4): string {
     let scale: number = this.availableScales.includes(preferScale)
       ? preferScale
       : this.availableScales.sort().reverse()[0];
@@ -91,7 +91,7 @@ class ChannelEmote extends BaseChannelEmote {
     return `https://7tv.app/emotes/${this.id}`;
   }
 
-  imageUrl(preferScale: ImageScale = 3): string {
+  imageUrl(preferScale: ImageScale = 4): string {
     let scale: number = this.availableScales.includes(preferScale)
       ? preferScale
       : this.availableScales.sort().reverse()[0];
