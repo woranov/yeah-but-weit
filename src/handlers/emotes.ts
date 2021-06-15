@@ -214,15 +214,19 @@ async function createEmoteResponseHtml(
 }
 
 
-function makeEmoteListHtml(channel: ChannelWithProfilePicture, emoteLists: BaseEmoteList<BaseEmote>[]): string {
-  const totalEmoteCount = emoteLists.reduce(
+type UnavailableEmoteList = { err: "unavailable", provider: EmoteProviderName };
+
+function makeEmoteListHtml(channel: ChannelWithProfilePicture, emoteLists: Array<BaseEmoteList<BaseEmote> | UnavailableEmoteList>): string {
+  const totalEmoteCount = (
+    emoteLists.filter(el => el instanceof BaseEmoteList) as BaseEmoteList<BaseEmote>[]
+  ).reduce(
     (currNum, currList) => currNum + (currList.emotes ? currList.emotes.length : 0),
     0,
   );
 
-  const perProviderEmoteCountString = emoteLists
-    .filter(emoteList => emoteList.emotes)
-    .map(({ provider, emotes }) => `${emotes!.length} ${provider.toUpperCase()}`)
+  const perProviderEmoteCountString = (
+    emoteLists.filter(el => el instanceof BaseEmoteList && el.emotes !== null) as BaseEmoteList<BaseEmote>[]
+  ).map(({ provider, emotes }) => `${emotes!.length} ${provider.toUpperCase()}`)
     .join(", ") + " Emotes";
 
   const makeEmoteList = (provider: EmoteProviderName, emotes: BaseEmote[]) => {
@@ -237,6 +241,12 @@ function makeEmoteListHtml(channel: ChannelWithProfilePicture, emoteLists: BaseE
 
   const providerHtmlSections = emoteLists
     .map(emoteList => {
+      if (!(emoteList instanceof BaseEmoteList)) {
+        return `
+          <h2>${providerFullNames[emoteList.provider]}</h2>
+          <em class='provider-emote-list'>unavailable</em>
+        `;
+      }
       const { provider, emotes, overviewUrl } = emoteList;
       if (emotes !== null) {
         let emoteList = "";
@@ -287,7 +297,7 @@ function makeEmoteListHtml(channel: ChannelWithProfilePicture, emoteLists: BaseE
         `;
       } else {
         return `
-          <h2><a href='${overviewUrl}'>${provider.toUpperCase()}</a></h2>
+          <h2><a href='${overviewUrl}'>${providerFullNames[emoteList.provider]}</a></h2>
           <em class='provider-emote-list'>unavailable</em>
         `;
       }
@@ -422,7 +432,6 @@ export const makeHandler = (provider: EmoteProviderName | null = null) => {
   };
 };
 
-
 export async function listEmotesHandler(request: Request): Promise<Response> {
   const channelName = request.params!.channelName;
 
@@ -431,7 +440,7 @@ export async function listEmotesHandler(request: Request): Promise<Response> {
   if (channel === null)
     return notFoundHandler();
 
-  const emoteLists: BaseEmoteList<BaseEmote>[] = [];
+  const emoteLists: Array<BaseEmoteList<BaseEmote> | UnavailableEmoteList> = [];
 
   for (const provider of <EmoteProviderName[]>["ttv", "ffz", "bttv", "7tv"]) {
     let providerEmoteList;
@@ -440,15 +449,15 @@ export async function listEmotesHandler(request: Request): Promise<Response> {
     } catch (e) {
       if (!(e instanceof TwitchEmotesApiSentIncorrect404)) {
         throw e;
+      } else if (provider === "ttv") {
+        providerEmoteList = new TwitchEmoteList({ channel, emotes: null });
       } else {
-        providerEmoteList = null;
+        providerEmoteList = { err: "unavailable", provider } as UnavailableEmoteList;
       }
     }
 
-    if (providerEmoteList && providerEmoteList.emotes === null) {
-      providerEmoteList.emotes = [];
-    } else if (providerEmoteList === null) {
-      providerEmoteList = new TwitchEmoteList({ channel, emotes: null });
+    if (providerEmoteList === null) {
+      providerEmoteList = { err: "unavailable", provider } as UnavailableEmoteList;
     }
     emoteLists.push(providerEmoteList);
   }

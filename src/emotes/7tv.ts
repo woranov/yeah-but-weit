@@ -187,7 +187,7 @@ query listChannel($channelLogin: String!) {
 }`;
 
 
-async function listChannel(channel: ChannelWithId): Promise<EmoteList> {
+async function listChannel(channel: ChannelWithId): Promise<EmoteList | null> {
   const data = await cached<SevenTvChannelEmoteList | null>(
     EMOTES, `list:7tv:${channel.id}`,
     async () => {
@@ -229,7 +229,7 @@ async function listChannel(channel: ChannelWithId): Promise<EmoteList> {
         })),
     });
   } else {
-    return new EmoteList({ sevenTvChannelId: "dank", emotes: null });
+    return null;
   }
 }
 
@@ -340,7 +340,7 @@ async function find(
   }
   if (!emote && channel) {
     const channelEmotes = await listChannel(channel);
-    if (channelEmotes.emotes) {
+    if (channelEmotes && channelEmotes.emotes) {
       emote = channelEmotes.emotes.find(e => e.code.toLowerCase() == code.toLowerCase()) ?? null;
     }
   }

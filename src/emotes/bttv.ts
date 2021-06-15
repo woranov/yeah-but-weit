@@ -123,7 +123,7 @@ async function listGlobal(): Promise<GlobalEmote[] | null> {
 }
 
 
-async function listChannel(channel: ChannelWithId): Promise<EmoteList> {
+async function listChannel(channel: ChannelWithId): Promise<EmoteList | null> {
   const data = await cached<BttvEmoteListResult | null>(
     EMOTES, `list:bttv:${channel.id}`,
     async () => {
@@ -163,7 +163,7 @@ async function listChannel(channel: ChannelWithId): Promise<EmoteList> {
       ],
     });
   } else {
-    return new EmoteList({ bttvChannelId: "dank", emotes: null });
+    return null;
   }
 }
 
@@ -298,7 +298,7 @@ async function find(
   }
   if (!emote && channel) {
     const channelEmotes = await listChannel(channel);
-    if (channelEmotes.emotes) {
+    if (channelEmotes && channelEmotes.emotes) {
       emote = preferCaseSensitiveFind(channelEmotes.emotes, code);
     }
   }
