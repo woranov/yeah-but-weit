@@ -287,6 +287,10 @@ function makeEmoteListHtml(channel: ChannelWithProfilePicture, emoteLists: Array
               ${makeEmoteList("bttv", sharedEmotes)}
             `;
           }
+          if (!channelEmotes.length && !sharedEmotes.length) {
+            // add a blank list to insert spacing
+            emoteList += makeEmoteList("bttv", []);
+          }
         } else {
           emoteList += makeEmoteList(provider, emotes);
         }
