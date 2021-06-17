@@ -22,7 +22,7 @@ class GlobalEmote extends BaseGlobalEmote {
   }
 
   imageUrl(preferScale: ImageScale = 3): string {
-    return `https://static-cdn.jtvnw.net/emoticons/v1/${this.id}/${preferScale}.0`;
+    return `https://static-cdn.jtvnw.net/emoticons/v2/${this.id}/default/dark/${preferScale}.0`;
   }
 }
 
@@ -51,7 +51,7 @@ class ChannelEmote extends BaseChannelEmote {
   }
 
   imageUrl(preferScale: ImageScale = 3): string {
-    return `https://static-cdn.jtvnw.net/emoticons/v1/${this.id}/${preferScale}.0`;
+    return `https://static-cdn.jtvnw.net/emoticons/v2/${this.id}/default/dark/${preferScale}.0`;
   }
 }
 
