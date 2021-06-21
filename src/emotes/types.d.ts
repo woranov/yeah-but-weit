@@ -5,18 +5,27 @@ type ImageScale = 1 | 2 | 3 | 4;
 type AvailableScalesArray = [ImageScale, ...ImageScale[]];
 
 
-interface TwitchEmoteEntry {
+// old twitchemotes types
+interface _TwitchEmoteEntry {
   id: number;
   code: string;
   emoticon_set: number;
 }
 
 
-interface TwitchEmoteListResult {
+interface _TwitchEmoteListResult {
   plans: {
     [key: string]: string;
   };
-  emotes: TwitchEmoteEntry[];
+  emotes: _TwitchEmoteEntry[];
+}
+
+
+interface TwitchEmoteEntry {
+  id: string;
+  name: string;
+  tier: string;
+  emote_type: "subscriptions" | "bitstier" | "follower";
 }
 
 

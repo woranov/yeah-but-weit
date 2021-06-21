@@ -6,9 +6,12 @@ import { addLinkToAtMentionTransformer, createHtml, notFoundHandler } from "./co
 import { originUrl } from "../supibot";
 import { BaseEmoteList, providerFullNames } from "../emotes/base";
 import {
-  ChannelEmote as TwitchChannelEmote,
+  BaseTwitchChannelEmote as TwitchChannelEmote,
+  BitEmote,
   EmoteList as TwitchEmoteList,
+  FollowerEmote,
   GlobalEmote as TwitchGlobalEmote,
+  SubEmote,
   TwitchEmotesApiSentIncorrect404,
 } from "../emotes/ttv";
 import { ChannelEmote as BttvChannelEmote, GlobalEmote as BttvGlobalEmote } from "../emotes/bttv";
@@ -251,9 +254,43 @@ function makeEmoteListHtml(channel: ChannelWithProfilePicture, emoteLists: Array
       if (emotes !== null) {
         let emoteList = "";
         if (provider === "ttv") {
-          const t1Emotes = (<TwitchChannelEmote[]>emotes).filter(e => e.tier === 1);
-          const t2Emotes = (<TwitchChannelEmote[]>emotes).filter(e => e.tier === 2);
-          const t3Emotes = (<TwitchChannelEmote[]>emotes).filter(e => e.tier === 3);
+          const t1Emotes: TwitchChannelEmote[] = [];
+          const t2Emotes: TwitchChannelEmote[] = [];
+          const t3Emotes: TwitchChannelEmote[] = [];
+          const followerEmotes: TwitchChannelEmote[] = [];
+          const bitEmotes: TwitchChannelEmote[] = [];
+
+          for (const emote of emotes) {
+            if (emote instanceof SubEmote) {
+              switch (emote.tier) {
+                case 1:
+                  t1Emotes.push(emote);
+                  break;
+                case 2:
+                  t2Emotes.push(emote);
+                  break;
+                case 3:
+                  t3Emotes.push(emote);
+                  break;
+              }
+            } else if (emote instanceof FollowerEmote) {
+              followerEmotes.push(emote);
+            } else if (emote instanceof BitEmote) {
+              bitEmotes.push(emote);
+            }
+          }
+
+          const sort = (ems: TwitchChannelEmote[]) => ems.sort((e1, e2) =>
+            e1.code < e2.code
+              ? -1 : e1.code > e2.code
+              ? 1 : 0,
+          );
+
+          sort(t1Emotes);
+          sort(t2Emotes);
+          sort(t3Emotes);
+          sort(followerEmotes);
+          sort(bitEmotes);
           if (t1Emotes.length) {
             emoteList += `
               <h3>Tier 1 <small>(${t1Emotes.length})</small></h3>
@@ -270,6 +307,18 @@ function makeEmoteListHtml(channel: ChannelWithProfilePicture, emoteLists: Array
             emoteList += `
               <h3>Tier 3 <small>(${t3Emotes.length})</small></h3>
               ${makeEmoteList("ttv", t3Emotes)}
+            `;
+          }
+          if (followerEmotes.length) {
+            emoteList += `
+              <h3>Follower <small>(${followerEmotes.length})</small></h3>
+              ${makeEmoteList("ttv", followerEmotes)}
+            `;
+          }
+          if (bitEmotes.length) {
+            emoteList += `
+              <h3>Bits <small>(${bitEmotes.length})</small></h3>
+              ${makeEmoteList("ttv", bitEmotes)}
             `;
           }
         } else if (provider === "bttv") {

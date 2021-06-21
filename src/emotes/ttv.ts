@@ -1,6 +1,6 @@
 import { BaseChannelEmote, BaseEmoteList, BaseGlobalEmote } from "./base";
 import { CACHE_TTL } from "../config";
-import { checkEmoteCode } from "../twitch";
+import { checkEmoteCode, helix } from "../twitch";
 import { preferCaseSensitiveFind } from "./common";
 import cached from "../caching";
 
@@ -27,23 +27,15 @@ class GlobalEmote extends BaseGlobalEmote {
 }
 
 
-class ChannelEmote extends BaseChannelEmote {
-  readonly tier: TwitchChannelEmoteTier;
-
-  constructor(
-    { tier, ...rest }: {
-      id: number,
+abstract class BaseTwitchChannelEmote extends BaseChannelEmote {
+  protected constructor(
+    args: {
+      id: string,
       code: string,
       creator: ChannelWithId,
-      tier: TwitchChannelEmoteTier,
     },
   ) {
-    super({ availableScales: [1, 2, 3], ...rest });
-    this.tier = tier;
-  }
-
-  get description(): string {
-    return `Tier ${this.tier} @${this.creator.name} Emote`;
+    super({ availableScales: [1, 2, 3], ...args });
   }
 
   get infoUrl(): string {
@@ -56,7 +48,62 @@ class ChannelEmote extends BaseChannelEmote {
 }
 
 
-type Emote = GlobalEmote | ChannelEmote;
+class SubEmote extends BaseTwitchChannelEmote {
+  readonly tier: TwitchChannelEmoteTier;
+
+  constructor(
+    { tier, ...rest }: {
+      id: string,
+      code: string,
+      creator: ChannelWithId,
+      tier: TwitchChannelEmoteTier,
+    },
+  ) {
+    super(rest);
+    this.tier = tier;
+  }
+
+  get description(): string {
+    return `Tier ${this.tier} @${this.creator.name} Emote`;
+  }
+}
+
+
+class BitEmote extends BaseTwitchChannelEmote {
+  constructor(
+    args: {
+      id: string,
+      code: string,
+      creator: ChannelWithId,
+    },
+  ) {
+    super(args);
+  }
+
+  get description(): string {
+    return `@${this.creator.name} Bits Emote`;
+  }
+}
+
+
+class FollowerEmote extends BaseTwitchChannelEmote {
+  constructor(
+    args: {
+      id: string,
+      code: string,
+      creator: ChannelWithId,
+    },
+  ) {
+    super(args);
+  }
+
+  get description(): string {
+    return `@${this.creator.name} Follower Emote`;
+  }
+}
+
+
+type Emote = GlobalEmote | SubEmote | BitEmote | FollowerEmote;
 
 
 class EmoteList extends BaseEmoteList<Emote> {
@@ -70,69 +117,57 @@ class EmoteList extends BaseEmoteList<Emote> {
 }
 
 
-class TwitchEmotesApiSentIncorrect404 extends Error {
-}
-
-
-const TWITCHEMOTES_API_PLAN_ALIASES: { [key: string]: TwitchChannelEmoteTier } = {
-  "$4.99": 1,
-  "$9.99": 2,
-  "$24.99": 3,
-};
-
 async function listChannel(channel: ChannelWithId): Promise<EmoteList> {
-  const data = await cached<TwitchEmoteListResult | null>(
+  const data = await cached<TwitchEmoteEntry[] | null>(
     EMOTES, `list:ttv:${channel.id}`,
     async () => {
-      const response = await fetch(
-        `https://api.twitchemotes.com/api/v4/channels/${channel.id}`,
-      );
+      const response = await helix(`chat/emotes?broadcaster_id=${channel.id}`);
 
       if (response.ok) {
-        return await response.json();
+        const json = await response.json();
+        return json.data;
       } else {
-        if (
-          response.status == 404
-          && (await response.json()).error.toLowerCase().includes("channel not found")
-        ) {
-          throw new TwitchEmotesApiSentIncorrect404();
-        }
+        return null;
       }
-      return null;
     },
     { expirationTtl: CACHE_TTL },
   );
 
   if (data) {
-    if (channel.id === 0) {
-      return new EmoteList({
-          channel, emotes: data.emotes
-            .filter(({ id }: TwitchEmoteEntry) => {
-              // ignore regex emotes like :), :D, ... for now
-              return id >= 15;
-            })
-            .map(({ id, code }: TwitchEmoteEntry) => {
-              return new GlobalEmote({ id, code });
-            }),
-        },
-      );
-    } else {
-      const reversePlanLookup = Object.fromEntries(
-        Object.entries(data.plans).map(([k, v]) => [v, k]),
-      );
-      return new EmoteList({
-        channel,
-        emotes: data.emotes.map(({ id, code, emoticon_set }: TwitchEmoteEntry) => {
-          return new ChannelEmote({
-              id,
-              code,
-              creator: channel,
-              tier: TWITCHEMOTES_API_PLAN_ALIASES[reversePlanLookup[emoticon_set.toString()]],
-            },
-          );
-        }),
-      });
+    const emotes = [];
+    for (const emoteData of data) {
+      switch (emoteData.emote_type) {
+        case "subscriptions":
+          emotes.push(new SubEmote({
+            id: emoteData.id,
+            code: emoteData.name,
+            creator: channel,
+            tier:
+              emoteData.tier === "1000"
+                ? 1 : emoteData.tier === "2000"
+                ? 2 : 3,
+          }));
+          break;
+        case "bitstier":
+          emotes.push(new BitEmote({
+            id: emoteData.id,
+            code: emoteData.name,
+            creator: channel,
+          }));
+          break;
+        case "follower":
+          emotes.push(new FollowerEmote({
+            id: emoteData.id,
+            code: emoteData.name,
+            creator: channel,
+          }));
+          break;
+      }
     }
+    return new EmoteList({
+      channel,
+      emotes: emotes,
+    });
   } else {
     return new EmoteList({ channel, emotes: null });
   }
@@ -172,8 +207,8 @@ async function findCode(code: string): Promise<Emote | null> {
     } else if (data.channellogin === null) {
       return new GlobalEmote({ id: data.emoteid, code: data.emotecode });
     } else {
-      return new ChannelEmote({
-        id: parseInt(data.emoteid),
+      return new SubEmote({
+        id: data.emoteid,
         code: data.emotecode,
         creator: {
           id: parseInt(data.channelid!),
@@ -196,41 +231,36 @@ async function find(
     return null;
   }
 
-  try {
-    if (channel) {
-      // check channel emote list
-      const channelEmotes = await listChannel(channel);
-      const emote = (
-        channelEmotes.emotes && preferCaseSensitiveFind(channelEmotes.emotes, code)
-      ) ?? null;
+  if (channel) {
+    // check channel emote list
+    const channelEmotes = await listChannel(channel);
+    const emote = (
+      channelEmotes.emotes && preferCaseSensitiveFind(channelEmotes.emotes, code)
+    ) ?? null;
 
-      if (emote) {
-        return emote;
-      } else if (checkEmoteCode({ emoteCode: code, caseSensitive: true })) {
-        // not found in channel emote list, so it must be a global emote
-        const emote = await findCode(code);
-        if (emote && emote instanceof GlobalEmote) {
-          return emote;
-        }
-      }
+    if (emote) {
+      return emote;
     } else if (checkEmoteCode({ emoteCode: code, caseSensitive: true })) {
-      return await findCode(code);
+      // not found in channel emote list, so it must be a global emote
+      const emote = await findCode(code);
+      if (emote && emote instanceof GlobalEmote) {
+        return emote;
+      }
     }
-  } catch (e) {
-    if (!(e instanceof TwitchEmotesApiSentIncorrect404)) {
-      throw e;
-    } else if (
-      checkEmoteCode({ emoteCode: code, caseSensitive: true })
-    ) {
-      let emote = await findCode(code);
-      if (emote && channel) {
-        // must match channel
-        if (
-          emote instanceof ChannelEmote
-          && emote.creator.name === channel.name
-        ) {
-          return emote;
-        }
+  } else if (checkEmoteCode({ emoteCode: code, caseSensitive: true })) {
+    return await findCode(code);
+  }
+  if (
+    checkEmoteCode({ emoteCode: code, caseSensitive: true })
+  ) {
+    let emote = await findCode(code);
+    if (emote && channel) {
+      // must match channel
+      if (
+        emote instanceof BaseTwitchChannelEmote
+        && emote.creator.name === channel.name
+      ) {
+        return emote;
       }
     }
   }
@@ -238,4 +268,13 @@ async function find(
 }
 
 
-export { ChannelEmote, GlobalEmote, EmoteList, TwitchEmotesApiSentIncorrect404, find, listChannel };
+export {
+  BaseTwitchChannelEmote,
+  SubEmote,
+  FollowerEmote,
+  BitEmote,
+  GlobalEmote,
+  EmoteList,
+  find,
+  listChannel,
+};
