@@ -16,6 +16,7 @@ export async function clearCacheHandler(request: Request): Promise<Response> {
             `list:ttv:${channel.id}`,
             `list:bttv:${channel.id}`,
             `list:ffz:${channel.id}`,
+            `list:7tv:${channel.id}`,
           ].map(key => EMOTES.delete(key)));
         }
       } else if (cacheKey) {
