@@ -27,6 +27,13 @@ class GlobalEmote extends BaseGlobalEmote {
 }
 
 
+class SpecialGlobalEmote extends GlobalEmote {
+  get description(): string {
+    return "Special Twitch Emote";
+  }
+}
+
+
 abstract class BaseTwitchChannelEmote extends BaseChannelEmote {
   protected constructor(
     args: {
@@ -206,6 +213,8 @@ async function findCode(code: string): Promise<Emote | null> {
       return null;
     } else if (data.channellogin === null) {
       return new GlobalEmote({ id: data.emoteid, code: data.emotecode });
+    } else if (data.tier === null) {
+      return new SpecialGlobalEmote({ id: data.emoteid, code: data.emotecode });
     } else {
       return new SubEmote({
         id: data.emoteid,

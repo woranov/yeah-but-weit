@@ -35,7 +35,7 @@ interface TwitchEmoteLookupResult {
   channellogin: string | null;
   emoteid: string;
   emotecode: string;
-  tier: string;
+  tier: string | null;
 }
 
 
