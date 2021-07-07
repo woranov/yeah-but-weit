@@ -56,14 +56,14 @@ abstract class BaseTwitchChannelEmote extends BaseChannelEmote {
 
 
 class SubEmote extends BaseTwitchChannelEmote {
-  readonly tier: TwitchChannelEmoteTier;
+  readonly tier: TwitchChannelEmoteTier | null;
 
   constructor(
     { tier, ...rest }: {
       id: string,
       code: string,
       creator: ChannelWithId,
-      tier: TwitchChannelEmoteTier,
+      tier: TwitchChannelEmoteTier | null,
     },
   ) {
     super(rest);
@@ -71,7 +71,13 @@ class SubEmote extends BaseTwitchChannelEmote {
   }
 
   get description(): string {
-    return `Tier ${this.tier} @${this.creator.name} Emote`;
+    if (this.tier === "special") {
+      return `Special @${this.creator.name} Emote`
+    } else if (this.tier === null) {
+      return `@${this.creator.name} Emote`;
+    } else {
+      return `Tier ${this.tier || '?'} @${this.creator.name} Emote`;
+    }
   }
 }
 
@@ -150,9 +156,11 @@ async function listChannel(channel: ChannelWithId): Promise<EmoteList> {
             code: emoteData.name,
             creator: channel,
             tier:
-              emoteData.tier === "1000"
+              emoteData.tier === ""
+                ? "special" : emoteData.tier === "1000"
                 ? 1 : emoteData.tier === "2000"
-                ? 2 : 3,
+                ? 2 : emoteData.tier === "3000"
+                ? 3 : null,
           }));
           break;
         case "bitstier":

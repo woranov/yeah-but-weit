@@ -1,4 +1,4 @@
-type TwitchChannelEmoteTier = 1 | 2 | 3;
+type TwitchChannelEmoteTier = 1 | 2 | 3 | "special";
 type EmoteProviderName = "ttv" | "bttv" | "ffz" | "7tv";
 
 type ImageScale = 1 | 2 | 3 | 4;

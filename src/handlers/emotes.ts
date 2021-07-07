@@ -12,7 +12,6 @@ import {
   FollowerEmote,
   GlobalEmote as TwitchGlobalEmote,
   SubEmote,
-  TwitchEmotesApiSentIncorrect404,
 } from "../emotes/ttv";
 import { ChannelEmote as BttvChannelEmote, GlobalEmote as BttvGlobalEmote } from "../emotes/bttv";
 import { GlobalEmote as FfzGlobalEmote } from "../emotes/ffz";
@@ -254,6 +253,8 @@ function makeEmoteListHtml(channel: ChannelWithProfilePicture, emoteLists: Array
       if (emotes !== null) {
         let emoteList = "";
         if (provider === "ttv") {
+          // TODO: un-hardcode this mess
+          const specialEmotes: TwitchChannelEmote[] = [];
           const t1Emotes: TwitchChannelEmote[] = [];
           const t2Emotes: TwitchChannelEmote[] = [];
           const t3Emotes: TwitchChannelEmote[] = [];
@@ -272,6 +273,9 @@ function makeEmoteListHtml(channel: ChannelWithProfilePicture, emoteLists: Array
                 case 3:
                   t3Emotes.push(emote);
                   break;
+                case "special":
+                  specialEmotes.push(emote);
+                  break;
               }
             } else if (emote instanceof FollowerEmote) {
               followerEmotes.push(emote);
@@ -286,11 +290,18 @@ function makeEmoteListHtml(channel: ChannelWithProfilePicture, emoteLists: Array
               ? 1 : 0,
           );
 
+          sort(specialEmotes);
           sort(t1Emotes);
           sort(t2Emotes);
           sort(t3Emotes);
           sort(followerEmotes);
           sort(bitEmotes);
+          if (specialEmotes.length) {
+            emoteList += `
+              <h3>Special <small>(${specialEmotes.length})</small></h3>
+              ${makeEmoteList("ttv", specialEmotes)}
+            `;
+          }
           if (t1Emotes.length) {
             emoteList += `
               <h3>Tier 1 <small>(${t1Emotes.length})</small></h3>
@@ -500,9 +511,7 @@ export async function listEmotesHandler(request: Request): Promise<Response> {
     try {
       providerEmoteList = await EMOTE_PROVIDERS[provider].listChannel(channel);
     } catch (e) {
-      if (!(e instanceof TwitchEmotesApiSentIncorrect404)) {
-        throw e;
-      } else if (provider === "ttv") {
+      if (provider === "ttv") {
         providerEmoteList = new TwitchEmoteList({ channel, emotes: null });
       } else {
         providerEmoteList = { err: "unavailable", provider } as UnavailableEmoteList;
