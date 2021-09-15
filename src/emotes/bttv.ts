@@ -296,10 +296,10 @@ async function find(
       emote = preferCaseSensitiveFind(globalEmotes, code);
     }
   }
-  if (!emote && channel) {
+  if (channel) {
     const channelEmotes = await listChannel(channel);
     if (channelEmotes && channelEmotes.emotes) {
-      emote = preferCaseSensitiveFind(channelEmotes.emotes, code);
+      emote = preferCaseSensitiveFind(channelEmotes.emotes, code) ?? emote;
     }
   }
   if (!emote && !channel) {
