@@ -285,9 +285,10 @@ function makeEmoteListHtml(channel: ChannelWithProfilePicture, emoteLists: Array
           }
 
           const sort = (ems: TwitchChannelEmote[]) => ems.sort((e1, e2) =>
-            e1.code < e2.code
-              ? -1 : e1.code > e2.code
-              ? 1 : 0,
+            e1.code.localeCompare(e2.code, undefined, {
+              numeric: true,
+              sensitivity: "base",
+            }),
           );
 
           sort(specialEmotes);
