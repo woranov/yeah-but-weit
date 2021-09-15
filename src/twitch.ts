@@ -68,10 +68,10 @@ async function getInitialAccessToken(): Promise<{ access_token: string, refresh_
 
 
 async function refreshAccessToken(): Promise<{ access_token: string, refresh_token: string } | { access_token: null, refresh_token: null }> {
-  const { refresh_token: refreshToken } = (await EMOTES.get(ACCESS_TOKEN_KV_KEY, "json")) ?? { refresh_token: null };
+  const { refresh_token: refreshToken } = await getToken();
 
   if (!refreshToken) {
-    return { access_token: null, refresh_token: null };
+    return await getInitialAccessToken();
   }
 
   const response = await fetch(
