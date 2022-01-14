@@ -39,7 +39,7 @@ async function find(
     code: string, channel: ChannelWithId | null, provider: EmoteProviderName | null
   },
 ): Promise<BaseEmote | null> {
-  const providers: EmoteProviderName[] = provider ? [provider] : ["ttv", "ffz", "bttv", "7tv"];
+  const providers: EmoteProviderName[] = provider ? [provider] : ["ttv", "ffz", "7tv", "bttv"];
 
   let candidates: BaseEmote[] = [];
   for (const provider of providers) {
