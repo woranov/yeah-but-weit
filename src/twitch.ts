@@ -1,4 +1,4 @@
-const CHANNEL_NAME_REGEX = /^[a-zA-Z0-9_]{4,25}$/;
+const CHANNEL_NAME_REGEX = /^[a-zA-Z0-9_]{3,25}$/;
 const CASE_SENSITIVE_EMOTE_CODE_REGEX = /^[a-z0-9]*[A-Z0-9]\w*$/;
 const CASE_INSENSITIVE_EMOTE_CODE_REGEX = /^[a-zA-Z0-9]{3,}\w+$/;
 
