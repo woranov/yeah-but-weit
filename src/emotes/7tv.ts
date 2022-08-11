@@ -151,7 +151,7 @@ async function listGlobal(): Promise<GlobalEmote[] | null> {
         return null;
       } else {
         return <SevenTvEmoteEntry[]>(
-          (await response.json()).data.search_emotes
+          (await response.json()).data?.search_emotes ?? []
         );
       }
     },
@@ -292,7 +292,7 @@ async function findCode(code: string): Promise<ChannelEmote[] | null> {
           break;
         } else {
           const page = <SevenTvEmoteEntry[]>(
-            (await response.json()).data.search_emotes
+            (await response.json()).data?.search_emotes ?? []
           );
           collectionSize = parseInt(response.headers.get("x-collection-size")!);
           results = [...results, ...page];
