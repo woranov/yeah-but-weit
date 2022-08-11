@@ -30,12 +30,12 @@ interface TwitchEmoteEntry {
 
 
 interface TwitchEmoteLookupResult {
-  channelid: string | null;
-  channel: string | null;
-  channellogin: string | null;
-  emoteid: string;
-  emotecode: string;
-  tier: string | null;
+  channelID: string | null;
+  channelName: string | null;
+  channelLogin: string | null;
+  emoteID: string;
+  emoteCode: string;
+  emoteTier: string | null;
 }
 
 

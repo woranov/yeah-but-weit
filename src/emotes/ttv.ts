@@ -192,12 +192,12 @@ async function listChannel(channel: ChannelWithId): Promise<EmoteList> {
 const DOES_NOT_EXIST_SENTINEL_EMOTE_ID = "-1";
 // noinspection JSUnusedLocalSymbols
 const DOES_NOT_EXIST_SENTINEL: TwitchEmoteLookupResult = {
-  channelid: null,
-  channel: null,
-  channellogin: null,
-  emoteid: DOES_NOT_EXIST_SENTINEL_EMOTE_ID,
-  emotecode: "",
-  tier: "",
+  channelID: null,
+  channelName: null,
+  channelLogin: null,
+  emoteID: DOES_NOT_EXIST_SENTINEL_EMOTE_ID,
+  emoteCode: "",
+  emoteTier: "",
 };
 
 
@@ -206,7 +206,7 @@ async function findCode(code: string): Promise<Emote | null> {
     EMOTES, `ttv:${code}`,
     async () => {
       const response = await fetch(
-        `https://api.ivr.fi/twitch/emotes/${code}`,
+        `https://api.ivr.fi/v2/twitch/emotes/${code}`,
       );
 
       return response.ok
@@ -217,22 +217,22 @@ async function findCode(code: string): Promise<Emote | null> {
   );
 
   if (data) {
-    if (data.emoteid === DOES_NOT_EXIST_SENTINEL_EMOTE_ID) {
+    if (data.emoteID === DOES_NOT_EXIST_SENTINEL_EMOTE_ID) {
       return null;
-    } else if (data.channellogin === null) {
-      return new GlobalEmote({ id: data.emoteid, code: data.emotecode });
-    } else if (data.tier === null) {
-      return new SpecialGlobalEmote({ id: data.emoteid, code: data.emotecode });
+    } else if (data.channelLogin === null) {
+      return new GlobalEmote({ id: data.emoteID, code: data.emoteCode });
+    } else if (data.emoteTier === null) {
+      return new SpecialGlobalEmote({ id: data.emoteID, code: data.emoteCode });
     } else {
       return new SubEmote({
-        id: data.emoteid,
-        code: data.emotecode,
+        id: data.emoteID,
+        code: data.emoteCode,
         creator: {
-          id: parseInt(data.channelid!),
-          name: data.channellogin!,
-          displayName: data.channel!,
+          id: parseInt(data.channelID!),
+          name: data.channelLogin!,
+          displayName: data.channelName!,
         },
-        tier: <TwitchChannelEmoteTier>parseInt(data.tier),
+        tier: <TwitchChannelEmoteTier>parseInt(data.emoteTier),
       });
     }
   } else {

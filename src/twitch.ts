@@ -6,22 +6,16 @@ const CASE_INSENSITIVE_EMOTE_CODE_REGEX = /^[a-zA-Z0-9]{3,}\w+$/;
 export async function fetchChannel(channel: string): Promise<ChannelWithProfilePicture | null> {
   try {
     const response = await fetch(
-      `https://api.twitch.tv/kraken/users?login=${channel.toLowerCase()}`,
-      {
-        headers: {
-          "Accept": "application/vnd.twitchtv.v5+json",
-          "Client-ID": TWITCH_CLIENT_ID,
-        },
-      },
+      `https://api.ivr.fi/v2/twitch/user?login=${channel}`
     );
     if (!response.ok) {
       return null;
     } else {
-      const user = (await response.json()).users[0];
+      const user = (await response.json())[0];
       return {
-        id: user._id,
-        name: user.name,
-        displayName: user.display_name,
+        id: parseInt(user.id),
+        name: user.login,
+        displayName: user.displayName,
         profileImageUrl: user.logo,
       };
     }
