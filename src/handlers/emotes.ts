@@ -233,7 +233,7 @@ function makeEmoteListHtml(channel: ChannelWithProfilePicture, emoteLists: Array
 
   const makeEmoteList = (provider: EmoteProviderName, emotes: BaseEmote[]) => {
     const listItems = emotes.map(emote => `
-      <li><a href='/${provider}/${channel.name.toLowerCase()}/${emote.code}' title='${emote.code} – ${emote.description}'>
+      <li><a href='/${channel.name.toLowerCase()}/${provider}/${emote.code}' title='${emote.code} – ${emote.description}'>
         <img src='${emote.imageUrl(2)}' alt='${emote.code}'>
       </a></li>
     `).join("\n");
