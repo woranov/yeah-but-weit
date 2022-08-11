@@ -1,5 +1,5 @@
 import { BaseChannelEmote, BaseEmoteList, BaseGlobalEmote } from "./base";
-import { CACHE_TTL } from "../config";
+import { CACHE_TTL, SHORTER_CACHE_TTL } from "../config";
 import { checkEmoteCode, helix } from "../twitch";
 import { preferCaseSensitiveFind } from "./common";
 import cached from "../caching";
@@ -143,7 +143,7 @@ async function listChannel(channel: ChannelWithId): Promise<EmoteList> {
         return null;
       }
     },
-    { expirationTtl: CACHE_TTL },
+    { expirationTtl: SHORTER_CACHE_TTL },
   );
 
   if (data) {
