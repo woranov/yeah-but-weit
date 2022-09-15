@@ -168,8 +168,8 @@ async function listGlobal(): Promise<GlobalEmote[] | null> {
 
 
 const GQL_LIST_CHANNEL_QUERY = `
-query listChannel($channelLogin: String!) {
-  user(id: $channelLogin) {
+query listChannel($channelId: String!) {
+  user(id: $channelId) {
     id
     emotes {
       id
@@ -202,7 +202,7 @@ async function listChannel(channel: ChannelWithId): Promise<EmoteList | null> {
             {
               query: GQL_LIST_CHANNEL_QUERY,
               variables: {
-                channelLogin: channel.name,
+                channelId: channel.id.toString(),
               },
             },
           ),
