@@ -18,7 +18,7 @@ class GlobalEmote extends BaseGlobalEmote {
   }
 
   get infoUrl(): string {
-    return `https://twitchemotes.com/emotes/${this.id}`;
+    return `https://emotes.raccatta.cc/twitch/emote/${this.id}`;
   }
 
   imageUrl(preferScale: ImageScale = 3): string {
@@ -46,7 +46,7 @@ abstract class BaseTwitchChannelEmote extends BaseChannelEmote {
   }
 
   get infoUrl(): string {
-    return `https://twitchemotes.com/emotes/${this.id}`;
+    return `https://emotes.raccatta.cc/twitch/emote/${this.id}`;
   }
 
   imageUrl(preferScale: ImageScale = 3): string {
@@ -123,7 +123,7 @@ class EmoteList extends BaseEmoteList<Emote> {
   constructor({ channel, emotes }: { channel: ChannelWithId, emotes: Emote[] | null }) {
     super({
       provider: "ttv",
-      overviewUrl: `https://twitchemotes.com/channels/${channel.id}`,
+      overviewUrl: `https://emotes.raccatta.cc/twitch/${channel.name}`,
       emotes,
     });
   }
